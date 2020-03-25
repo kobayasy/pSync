@@ -1,0 +1,40 @@
+# .github/workflows/release.yml - Last modified: 22-Mar-2020 (kobayasy)
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "[0-9]*"
+
+jobs:
+  dist:
+    strategy:
+      matrix:
+        dist:
+          - psync-2.2
+        os:
+          - ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Release
+        id: release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: pSync ${{ github.ref }}
+      - name: Set up Upload
+        run: test -e ${{ matrix.dist }}.tar.gz || tar czf ${{ matrix.dist }}.tar.gz ${{ matrix.dist }}
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: ${{ matrix.dist }}.tar.gz
+          asset_name: ${{ matrix.dist }}.tar.gz
+          asset_content_type: application/gzip

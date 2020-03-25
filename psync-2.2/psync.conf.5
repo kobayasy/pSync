@@ -1,0 +1,233 @@
+./" psync.conf.5 - Last modified: 04-Mar-2020 (kobayasy)
+./"
+./" Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+./"
+./" Permission is hereby granted, free of charge, to any person
+./" obtaining a copy of this software and associated documentation files
+./" (the "Software"), to deal in the Software without restriction,
+./" including without limitation the rights to use, copy, modify, merge,
+./" publish, distribute, sublicense, and/or sell copies of the Software,
+./" and to permit persons to whom the Software is furnished to do so,
+./" subject to the following conditions:
+./"
+./" The above copyright notice and this permission notice shall be
+./" included in all copies or substantial portions of the Software.
+./"
+./" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+./" EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+./" MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+./" NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+./" BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+./" ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+./" CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+./" SOFTWARE.
+./"
+.Dd March 4, 2020
+.Dt PSYNC.CONF 5
+.Os POSIX
+.Sh NAME
+.Pa ~/.psync.conf
+.Nd pSync の設定ファイル
+.Sh DESCRIPTION
+.Pa ~/.psync.conf
+は
+.Xr psync 1
+で同期対象とするディレクトリを、1行にその
+.Ar 識別名
+と
+.Ar パス名 Ns 、
+.Ar バックアップ保持期間 Ns 、
+.Ar 削除履歴保持期間
+の4パラメータをこの順番に並べた複数行から成るテキストファイルで、この行を追加する事で同期ディレクトリの追加登録、削除(又はコメントアウト)する事で登録の解除を行う。
+.Pp
+.Bl -tag -width Ds
+.It Ar 識別名
+ディレクトリの内容を示す任意な文字列。
+英字か数字で始まり、設定ファイル内で一意である事。
+必須のパラメータで省略は出来ない。
+.It Ar パス名
+同期ディレクトリをホームディレクトリからの相対パスで指定する。
+必須のパラメータで省略は出来ない。
+.It Ar バックアップ保持期間
+同期により削除、または更新されたファイルのバックアップを残す期間を何日後までとするかを、10進数文字列で指定する。
+このパラメータは省略可能で、省略した場合は3日後まで残す指定となる。
+とりあえずは省略で問題ない。
+.It Ar 削除履歴保持期間
+後で説明する
+ファイル削除履歴
+の保持期間を削除されてから何日後までとするかを、10進数文字列で指定する。
+このパラメータは省略可能で、省略した場合は400日後まで保持する指定となる。
+とりあえずは省略で問題ない。
+.El
+.Pp
+1文字以上の連続したスペース文字(スペースとタブ)を各パラメータのデリミタとして認識する。
+.Pp
+.Sq Li #
+はそれ以降から行末までをコメントと認識する。
+.Pp
+スペースとタブはデリミタ、
+.Sq Li #
+はコメント、改行コードは行末に、それぞれ認識されてしまうので、各パラメータにそれらの文字は使用出来ない。
+例えば
+.Sq Li #
+を含んだ
+.Ar 識別名
+や、スペース文字を含んだ
+.Ar パス名
+は指定出来ない。
+.Pp
+登録されているディレクトリは存在している必要がある。
+存在しないディレクトリを新規作成して登録する場合は、先にディレクトリを作成してから設定ファイルへの追加登録を行う事。
+同様に登録されているディレクトリを削除したい場合は、先に登録の解除を済ませた後にディレクトリの削除を行う事。
+.Ss ファイル削除履歴
+「ある同期対象のファイルが同期元と相手とで片側にだけ存在し、もう片方には存在しない。」状態は、「存在する側が対象のファイルを追加した。」か「存在しない側が対象のファイルを削除した。」の2通りが考えられる。
+このどちらなのかを判断するためには、過去に同期した時の履歴を残しておく必要がある。
+.Pp
+2ホスト間の1対1みの同期に限定するならば前回だけの履歴で充分だが、同期ホスト数に制限なく3ホスト以上の間での同期も想定しており、例えば下記の場合だと前回のだけでは8でaの削除を判断出来ない。
+そのため、4でaを削除した履歴を短くとも8の時点までは残しておく必要がある。
+.Pp
+この削除した履歴が
+ファイル削除履歴
+で、それを残しておく期間を
+.Ar 削除履歴保持期間
+で指定する。
+.Pp
+削除タイミングの予測はできないので、
+ファイル削除履歴
+の保持期間は長いほど良い(理想は無期限)が、この履歴はファイル
+.Va 同期ディレクトリ Ns Pa /.psync/last
+に保持され、期間を長くするとサイズも大きくなるので、そのサイズとの兼ね合いで調整する。
+.Pp
+Bで作業していて一時的にCで作業した後にBでの作業に戻る例:
+.Bl -enum -offset indent
+.It
+Bにaとbが存在する状態
+.It
+B<->A BのaとbをAに同期
+.It
+C<->A BのaとbをAを経由してCに同期
+.It
+Cでaを削除
+.It
+C<->A Cのaの削除をAに同期
+.It
+Cでbを更新
+.It
+C<->A Cのbの更新をAに同期
+.It
+B<->A Cのaの削除とbの更新をAを経由してBに同期
+.El
+.Pp
+.Pq アルファベットの大文字はホスト、小文字は同期ファイル、<-> は同期動作を示す
+.Sh EXAMPLES
+.Pa ~/.psync.conf
+への同期ディレクトリの登録と、その同期動作例を示す。
+.Bl -enum -offset indent
+.It
+登録ディレクトリが1つだけの設定例
+.Pp
+.Bd -literal -offset indent
+#識別名 パス名
+psync   pSync
+.Ed
+.Pp
+同期ディレクトリ
+.Pa ~/pSync/
+を、
+.Ar 識別名
+psync で登録。
+.Ar バックアップ保持期間
+と
+.Ar 削除履歴保持期間
+は省略されているので、それぞれ3日と400日に設定される。
+1行目は先頭が
+.Sq #
+なので、行全体がコメント文と認識され無視される。
+.It
+複数のディレクトリを登録する例
+.Pp
+.Bd -literal -offset indent
+#識別名 パス名        コメント文
+private pSync/Private #個人データ
+work    pSync/Work    #仕事のデータ
+.Ed
+.Pp
+同期ディレクトリを個人データの
+.Pa ~/pSync/Private/
+と仕事のデータ
+.Pa ~/pSync/Work/
+とに分けたい場合は、こんな感じに設定する。
+.Sq #
+を行の途中に書くと、それ以降から行末までがコメント文と認識される。
+.It
+.Ar バックアップ保持期間
+と
+.Ar 削除履歴保持期間
+を指定する例
+.Pp
+.Bd -literal -offset indent
+#              バックアップ 削除履歴
+#識別名 パス名     保持期間 保持期間 コメント文
+private doc/private                  #個人データ
+work    doc/work         30     1000 #仕事のデータ
+public  doc/public        7          #共有データ
+.Ed
+.Pp
+この場合、同期ディレクトリ
+.Pa ~/doc/work/
+の
+.Ar バックアップ保持期間
+が30日後までに、
+.Ar 削除履歴保持期間
+が1000日後までに設定される。
+同様に，同期ディレクトリ
+.Pa ~/doc/public/
+の
+.Ar バックアップ保持期間
+が7日後までに設定される。
+.Ar バックアップ保持期間
+を省略して
+.Ar 削除履歴保持期間
+を指定する事は出来ない。
+.El
+.Pp
+例えば、2の設定例と3の設定例のホスト間で同期を行った場合、両方共に存在する
+.Ar 識別名
+は private と work なので、private が示す2のホストのディレクトリ
+.Pa ~/pSync/Private/
+と、3のホストの
+.Pa ~/doc/private/
+が同期され，同様に work が示す2のホストの
+.Pa ~/pSync/work/
+と、3のホストの
+.Pa ~/doc/work/
+も同期される。
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev HOME
+ホームディレクトリを示す環境変数。
+設定ファイルはこのディレクトリに置かれる。
+同期ディレクトリの
+.Ar パス名
+はここからの相対パスで指定する。
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Va 同期ディレクトリ Ns Pa /.psync/ Ns Va ファイル同期日時 Ns Pa /
+バックアップ保持ディレクトリ。
+同期ログと同期により削除された、または更新されたファイルはここに一時的に保持され、
+.Ar バックアップ保持期間
+で指定した期間が経過すると自動で削除される。
+.It Va 同期ディレクトリ Ns Pa /.psync/last
+同期情報保存ファイル。
+前回同期した時の状態を保持する。
+ファイル削除履歴
+もここに含まれ、
+.Ar 削除履歴保持期間
+で指定した期間保持される。
+.Xr psync 1
+により自動生成される。
+削除してはいけない。
+.El
+.Sh SEE ALSO
+.Xr psync 1

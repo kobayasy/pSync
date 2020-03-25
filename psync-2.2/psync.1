@@ -1,0 +1,329 @@
+./" psync.1 - Last modified: 11-Mar-2020 (kobayasy)
+./"
+./" Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+./"
+./" Permission is hereby granted, free of charge, to any person
+./" obtaining a copy of this software and associated documentation files
+./" (the "Software"), to deal in the Software without restriction,
+./" including without limitation the rights to use, copy, modify, merge,
+./" publish, distribute, sublicense, and/or sell copies of the Software,
+./" and to permit persons to whom the Software is furnished to do so,
+./" subject to the following conditions:
+./"
+./" The above copyright notice and this permission notice shall be
+./" included in all copies or substantial portions of the Software.
+./"
+./" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+./" EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+./" MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+./" NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+./" BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+./" ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+./" CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+./" SOFTWARE.
+./"
+.Dd March 11, 2020
+.Dt PSYNC 1
+.Os POSIX
+.Sh NAME
+pSync
+.Nd ネットワーク双方向ファイル同期ツール
+.Sh SYNOPSIS
+.Nm psync
+.Op Fl Fl sync
+.Op Fl v Ns | Ns Fl q
+.Oo Ar USER Ns @ Oc Ns Ar HOST Ns Oo # Ns Ar PORT Oc
+.Nm
+.Fl Fl put
+.Op Fl v Ns | Ns Fl q
+.Oo Ar USER Ns @ Oc Ns Ar HOST Ns Oo # Ns Ar PORT Oc
+.Nm
+.Fl Fl get
+.Op Fl v Ns | Ns Fl q
+.Oo Ar USER Ns @ Oc Ns Ar HOST Ns Oo # Ns Ar PORT Oc
+.Nm
+.Fl Fl help
+.Sh DESCRIPTION
+.Ar USER Ns @ Ns Ar HOST
+で指定した相手とファイル同期を行う。
+設定ファイル
+.Pa ~/.psync.conf
+で登録されたディレクトリの内、同期元と相手の両方に存在する識別名が付いたディレクトリ内のファイルを同期対象とする。
+.Pp
+.Ar HOST
+で同期相手のホスト名を、
+.Ar USER
+でそのログイン名を指定する。
+.Ar USER
+は省略可能で、省略した場合は現在ログイン中のユーザー名が指定される。
+.Pp
+設定ファイルへ同期ディレクトリを登録する方法に付いては
+.Xr psync.conf 5
+で説明しているのでそちらを参照。
+.Pp
+ファイル同期するホストはシステム時刻が正確に設定されている事。
+pSync はファイルの更新日時と作成日時を元に同期方向を決定する為、システム時刻が正確でないとそれを元に設定されるファイルの日時も不正確になり、正しい同期方向の判定が出来ない。
+.Pp
+pSync は内部で OpenSSH の
+.Nm ssh
+を実行して
+.Ar HOST
+で指定したホストに
+.Ar USER
+で指定したユーザー名でログインをして同期相手の制御を行う。
+OpenSSH のリモートコマンド実行、ユーザー認証、転送データの暗号化と圧縮の機能を利用して、専用のサーバが不要で、セキュアな高速ファイル転送を実現している。
+その為、pSync を動作させる前提条件として、OpenSSH で同期相手へログインできる環境と
+.Nm ssh
+への実行パスが通っている必要が有る。
+同期相手にも pSync のインストールが必要で
+.Nm ssh
+でログインした状態で
+.Nm
+への実行パスが通っている事。
+同期相手の SSH ポート番号は
+.Ar PORT
+で指定できる。
+.Ar PORT
+は省略可能で、省略した場合は22が指定される。
+.Pp
+pSync は同期相手側としてリモートで起動される場合も含めて複数同時実行が可能であるが、同期処理中のディレクトリに対して重複して同期を始める事は出来ない。
+もし、重複するような場合は後から同期を始めようとした側の
+進捗情報
+に
+.Dl Do Skip, not ready. Dc
+を表示してそのディレクトリに対する同期処理を飛ばす。
+同期処理の完了を待つ事はしないので、必要に応じて同期完了を待ってから再度実行をする。
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl s Ns , Fl Fl sync
+同期元と相手で双方向に同期する。
+このオプションはデフォルトで有効。
+.Fl Fl put Ns Po Fl s Pc , Fl Fl get Ns Po Fl g Pc
+とは排他の関係に有り、一番最後の指定のみが有効になる。
+.It Fl p Ns , Fl Fl put
+同期相手を同期元に一方向に同期する。
+.Fl Fl sync Ns Po Fl p Pc , Fl Fl get Ns Po Fl g Pc
+とは排他の関係に有り、一番最後の指定のみが有効になる。
+.It Fl g Ns , Fl Fl get
+同期元を同期相手に一方向に同期する。
+.Fl Fl sync Ns Po Fl s Pc , Fl Fl put Ns Po Fl p Pc
+とは排他の関係に有り、一番最後の指定のみが有効になる。
+.It Fl v Ns , Fl Fl verbose
+同期ファイルのアップロードとダウンロードの
+進捗情報
+をリアルタイムに表示する。
+進捗情報
+の表示に付いては後で説明する。
+このオプションはデフォルトで有効。
+.Fl Fl quiet Ns Po Fl q Pc
+とは排他の関係に有り、一番最後の指定のみが有効になる。
+.It Fl q Ns , Fl Fl quite
+エラー以外のメッセージ出力を止める。
+.Fl Fl verbose Ns Po Fl v Pc
+とは排他の関係に有り、一番最後の指定のみが有効になる。
+.It Fl Fl help
+簡単なヘルプメッセージを表示する。
+.El
+.Ss 進捗情報
+.Fl Fl verbose Ns Po Fl v Pc
+で進捗情報表示を有効にすると、以下の5種類の情報がリアルタイムに表示される。
+.Bl -tag -width Ds
+.It Ar 認識名
+行の左端から始まる文字列は、現在同期処理中の同期ディレクトリを示す識別名。
+識別名に付いては
+.Xr psync.conf 5
+を参照。
+.It Li D: Va ダウンロードするバイト数 Li -> Va ダウンロードしたバイト数
+.Do Li D: Dc
+から始まる表示はダウンロードの進捗状況。
+.Do Li -> Dc
+の左側はダウンロードする総バイト数を、右側は既にダウンロードが済んでいるバイト数をそれぞれ示す。
+.It Li U: Va アップロードするバイト数 Li -> Va アップロードしたバイト数
+.Do Li U: Dc
+から始まる表示はアップロードの進捗状況。
+.Do Li -> Dc
+の左側はアップロードする総バイト数を、右側は既にアップロードが済んでいるバイト数をそれぞれ示す。
+.It Li L: Va 同期元のエラーメッセージ
+.Do Li L: Dc
+から始まる表示は同期元のエラーメッセージ。
+.It Li R: Va 同期相手のエラーメッセージ
+.Do Li R: Dc
+から始まる表示は同期相手のエラーメッセージ。
+.El
+.Sh ENVIRONMENT
+.Bl -tag -width Ds
+.It Ev HOME
+ホームディレクトリを示す環境変数。
+設定ファイルはこのディレクトリに置かれる。
+同期ディレクトリはここからの相対パスで指定する。
+.It Ev PATH
+実行パスを設定する環境変数。
+.Nm
+と OpenSSH の
+.Nm ssh
+の両方に実行パスが通っている事。
+.El
+.Sh FILES
+.Bl -tag -width Ds
+.It Pa ~/.psync.conf
+pSync の設定ファイル。
+詳細は
+.Xr psync.conf 5
+で説明しているのでそちらを参照。
+.It Va 同期ディレクトリ Ns Pa /.psync/last
+同期情報保存ファイル。
+前回同期した時の状態を保持する。
+pSync により自動生成される。
+削除してはいけない。
+.It Va 同期ディレクトリ Ns Pa /.psync/ Ns Va ファイル同期日時 Ns Pa /
+バックアップ保持ディレクトリ。
+同期ログと同期により削除された、または更新されたファイルはここに一時的に保持され、設定ファイルで指定した期間が経過すると自動で削除される。
+設定ファイルに付いては、
+.Xr psync.conf 5
+で説明しているのでそちらを参照。
+.It Va 同期ディレクトリ Ns Pa /.psync/ Ns Va ファイル同期日時 Ns Pa /log
+同期ログのテキストファイル。
+先頭の行は同期により削除と追加、更新、アップロードされた、それぞれのファイル数を示し、それ以降の
+.Sq Li D
+で始まる行は同期により削除されたファイル名、
+.Sq Li A
+は追加されたファイル名、
+.Sq Li M
+は更新されたファイル名、
+.Sq Li U
+は同期相手へアップロードしたファイル名を示している。
+ファイル名最後の
+.Sq Li /
+はファイルの種類がディレクトリ、
+.Sq Li @
+はシンボリックリンク、
+.Sq Li %
+は削除されたファイルである事を示しており、通常ファイルには何も付かない。
+追加ファイルと更新ファイルは同期後の種類、削除ファイルは同期前の種類を示す。
+さらに、削除か更新された通常ファイルの場合は
+.Dq Li ->
+に続けてバックアップファイル名も示される。
+.It Va 同期ディレクトリ Ns Pa /.psync/lock/
+同期ディレクトリの排他制御用ロックファイル。
+アップロードとダウンロードの一時ファイル置き場も兼ねている。
+.Nm
+の実行中に自動生成され実行終了までに自動削除される。
+.Nm
+の実行が何らかの原因で強制中断した場合、自動削除が動作せずにこのファイルが残ったままになる事が起こり得る。
+その場合は手動で削除してロックを解除する必要がある。
+.El
+.Sh EXIT STATUS
+なにも問題なくファイル同期に成功した場合は
+.Er 0
+を返す。
+何らかの原因で処理が中断され、ファイル同期に失敗した場合は
+.Er 0
+以外を返す。
+.Pp
+.Bl -tag -width Ds
+.It Er 0 Ns , Do \&No error Dc
+ファイル同期成功(エラーなし)。
+.It Er 1 Ns , Do Unknown Dc
+不明なエラー。
+.It Er 2 Ns , Do File type Dc
+非対応な種類のファイルが同期ディレクトリ内に存在する。
+pSync が対応しているファイルは通常ファイルとディレクトリ、シンボリックリンクの3種類のみ。
+下記コマンドで非対応なファイルの検出が出来る。
+.Dl find Ar 同期ディレクトリ Li ! -type f \&! -type d \&! -type l
+他の同期ディレクトリを同期ディレクトリ内に含める事も出来ない。
+ハードリンクはそれぞれ個別の通常ファイルとして扱われる。
+.It Er 3 Ns , Do File permission Dc
+.Ar USER
+の権限でアクセスできないファイルが同期ディレクトリ内に存在する。
+このエラー原因のファイルは下記コマンドで検出出来る。
+.Dl find Ar 同期ディレクトリ Li -type f \&! -readable -o -type d \&! \e( -readable -writable -executable \e)
+.It Er 4 Ns , Do Make file Dc
+同期ファイルの生成に失敗した。
+ディスク容量が足りなくなった場合もこのエラーになる。
+.It Er 5 Ns , Do Open file Dc
+同期ファイルのオープンに失敗した。
+.It Er 6 Ns , Do Write file Dc
+同期ファイルの書き込みに失敗した。
+ディスク容量が足りなくなった場合もこのエラーになる。
+.It Er 7 Ns , Do Read file Dc
+同期ファイルの読み出しに失敗した。
+.It Er 8 Ns , Do Link file Dc
+同期ファイルのシンボリックリンク生成に失敗した。
+ディスク容量が足りなくなった場合もこのエラーになる。
+.It Er 9 Ns , Do Remove file Dc
+同期ファイルの削除に失敗した。
+.It Er 10 Ns , Do Move file Dc
+同期ファイルの移動に失敗した。
+.It Er 11 Ns , Do Write file-stat Dc
+同期ファイルの情報読み出しに失敗した。
+.It Er 12 Ns , Do Read file-stat Dc
+同期ファイルの情報書き込みに失敗した。
+.It Er 13 Ns , Do Upload file-stat Dc
+ファイル情報のアップロードに失敗した。
+途中で同期先との接続が切れた場合もこのエラーになる。
+.It Er 14 Ns , Do Download file-stat Dc
+ファイル情報のダウンロードに失敗した。
+途中で同期先との接続が切れた場合もこのエラーになる。
+.It Er 15 Ns , Do Upload file Dc
+ファイルのアップロードに失敗した。
+途中で同期先との接続が切れた場合もこのエラーになる。
+.It Er 16 Ns , Do Download file Dc
+ファイルのダウンロードに失敗した。
+途中で同期先との接続が切れた場合もこのエラーになる。
+.It Er 17 Ns , Do Make data-file Dc
+同期情報保存ファイルの生成に失敗した。
+ディスク容量が足りなくなった場合もこのエラーになる。
+.It Er 18 Ns , Do Open data-file Dc
+同期情報保存ファイルのオープンに失敗した。
+.It Er 19 Ns , Do Write data-file Dc
+同期情報保存ファイルの書き込みに失敗した。
+ディスク容量が足りなくなった場合もこのエラーになる。
+.It Er 20 Ns , Do Read data-file Dc
+同期情報保存ファイルの読み出しに失敗した。
+.It Er 21 Ns , Do Remove data-file Dc
+同期情報保存ファイルの削除に失敗した。
+.It Er 22 Ns , Do Memory Dc
+作業バッファの確保に失敗した。
+メモリ不足の場合はこのエラーになる。
+.It Er 23 Ns , Do System Dc
+その他の問題により同期処理を中断した。
+.It Er 24 Ns , Do Interrupted Dc
+シグナルの SIGHUP か SIGINT、SIGTERM、SIGPIPE のいずれかを受けて処理を中断した。
+.It Er 25 Ns , Do Protocol Dc
+同期相手との接続に失敗したかプロトコルが合わない。
+.Ar USER Ns @ Ns Ar HOST
+で指定した同期相手のホスト名かログイン名に間違いがあった場合もこのエラーになる。
+同期相手に pSync が正しくインストールされていない事も考えられる。
+.It Er 26 Ns , Do Environment Dc
+環境変数に問題が有る。
+.Ev HOME
+が正しく設定されてい無い場合はこのエラーになる。
+.It Er 27 Ns , Do Configuration Dc
+設定ファイルに問題が有る。
+.Pa ~/.psync.conf
+が存在しないか存在してもその内容に問題がある場合にこのエラーになる。
+設定ファイルに付いては、
+.Xr psync.conf 5
+で説明しているのでそちらを参照。
+.It Er 28 Ns , Do Argument Dc
+引数に問題が有る。
+間違った引数を与えた場合はこのエラーになる。
+.It Er 255
+その他のエラー。
+.El
+.Sh SEE ALSO
+.Xr psync.conf 5 ,
+.Xr ssh 1
+.Sh AUTHORS
+Ruby 実装のファイル同期ツール MSync
+.Pq Lk http://kobayasy.com/msync/
+が pSync の前身で、pSync はこれをC言語へ移植した物。
+pSync、MSync 共に
+.An Yuichi\ Kobayashi
+が設計と実装を行った。
+.Pp
+バグレポートは Subject に
+.Dq pSync
+を入れて
+.Mt kobayasy@kobayasy.com
+まで。

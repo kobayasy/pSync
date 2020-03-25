@@ -1,0 +1,91 @@
+# @configure_input@
+# Makefile.in - Last modified: 13-Mar-2020 (kobayasy)
+#
+# Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation files
+# (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge,
+# publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+TARGET = @PACKAGE_TARNAME@@EXEEXT@
+OBJS = psync.@OBJEXT@ psync_psp1.@OBJEXT@ popen3.@OBJEXT@ main.@OBJEXT@
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
+datarootdir = @datarootdir@
+mandir = @mandir@
+
+CC = @CC@
+CFLAGS  = @CFLAGS@
+#CFLAGS += -Wall
+#CFLAGS += -Wno-shift-count-overflow
+#CFLAGS += -Wno-string-plus-int
+#CFLAGS += -Wno-tautological-constant-out-of-range-compare
+DEFS = @DEFS@
+LIBS = @LIBS@
+INSTALL = @INSTALL@
+
+VPATH = @srcdir@
+@SET_MAKE@
+
+all : $(TARGET)
+
+$(TARGET) : $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+
+psync.@OBJEXT@ : psync.c psync_utils.h psync.h
+psync_psp1.@OBJEXT@ : psync_psp1.c psync_utils.h psync.h psync_psp1.h
+popen3.@OBJEXT@ : popen3.c popen3.h
+main.@OBJEXT@ : main.c psync_utils.h psync_psp1.h psync.h popen3.h
+
+%.@OBJEXT@ : %.c
+	$(CC) $(CFLAGS) $(DEFS) -c $<
+
+clean :
+	$(RM) $(TARGET)
+	$(RM) $(OBJS)
+
+distclean : clean
+	$(RM) config.log config.status config.cache
+	$(RM) Makefile
+
+install : install-bin install-man
+
+install-bin : all $(bindir)
+	$(INSTALL) -m755 -s $(TARGET) $(bindir)
+
+install-man : all $(mandir)/ja/man1 $(mandir)/ja/man5
+	$(INSTALL) -m644 @PACKAGE_TARNAME@.1 $(mandir)/ja/man1
+	$(INSTALL) -m644 psync.conf.5 $(mandir)/ja/man5
+
+uninstall : uninstall-bin uninstall-man
+
+uninstall-bin :
+	$(RM) $(addprefix $(bindir)/,$(TARGET))
+
+uninstall-man :
+	$(RM) $(mandir)/ja/man1/@PACKAGE_TARNAME@.1
+	$(RM) $(mandir)/ja/man5/psync.conf.5
+
+$(bindir) :
+	$(INSTALL) -m755 -d $@
+
+$(mandir)/ja/man% :
+	$(INSTALL) -m755 -d $@
