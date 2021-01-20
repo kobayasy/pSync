@@ -4,7 +4,7 @@
 [Dropbox] が [Raspberry Pi] で動かないので、その代替えに作ったネットワーク双方向ファイル同期ツール。
 
 [Raspberry Pi] 以外でも POSIX に準拠した環境であれば動作するはず。
-[Raspbian] と [macOS]、[Debian/Linux]、[Ubuntu] では普段使いしていて、問題なく動作している。
+[Raspberry Pi OS] と [macOS]、[Debian/Linux]、[Ubuntu] では普段使いしていて、問題なく動作している。
 [Cygwin] でも一通りの動作は確認済みだけど、実用に耐えるかは不明。
 
 #### 特徴は↓
@@ -131,5 +131,5 @@ $SYNCCMD && exec inotify-hookable -w "`realpath $SYNCDIR`" -i .psync -c "$SYNCCM
 [macOS]: https://www.apple.com/macos/
 [OpenSSH]: https://www.openssh.com
 [Raspberry Pi]: https://www.raspberrypi.org
-[Raspbian]: https://www.raspberrypi.org/downloads/raspbian/
+[Raspberry Pi OS]: https://www.raspberrypi.org/software/operating-systems/#raspberry-pi-os-32-bit
 [Ubuntu]: https://ubuntu.com
