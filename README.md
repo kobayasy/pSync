@@ -85,11 +85,12 @@ localhost$
 表示内容に Error から始まる行が含まれる場合は、その行に原因も一緒に表示されているのでそれを取り除く。
 
 ### ファイル同期の手順:
-これを実行する度に localhost の ~/pSync/ と example.com の ~guest/pSync/ のファイルが同期される。
+これを実行する度に localhost の ~/pSync/Private/ と example.com の ~guest/pSync/Private/ のファイルが同期され、続けて ~/pSync/Work/ と ~guest/pSync/Work/ も同期される。
 
 ```
 localhost$ psync guest@example.com
-psync
+private
+work
 localhost$ 
 ```
 
