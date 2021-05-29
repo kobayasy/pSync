@@ -1,6 +1,6 @@
-/* psync.c - Last modified: 06-Mar-2020 (kobayasy)
+/* psync.c - Last modified: 28-May-2021 (kobayasy)
  *
- * Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -243,6 +243,7 @@ static int write_FLIST(bool synced, FLIST *flist, int fd,
     size_t length, n;
     FST st;
 
+    ONSTOP(stop, -1);
     if (*flist->name) {
         status = -1;
         goto error;
@@ -278,6 +279,7 @@ static int read_FLIST(bool synced, FLIST *flist, int fd,
     size_t length;
     char dirname[PATH_MAX];
 
+    ONSTOP(stop, -1);
     if (*flist->name) {
         status = -1;
         goto error;
@@ -414,6 +416,7 @@ static int save_fsynced(PRIV *priv) {
     uint32_t id;
     struct timeval tv[2];
 
+    ONSTOP(priv->stop, ERROR_STOP);
     sprintf(pathname, "%s/"SYNCDIR"/"LOCKDIR"/"LASTFILE, priv->dirname);
     fd = creat(pathname, S_IRUSR|S_IWUSR);
     if (fd == -1) {
@@ -424,10 +427,7 @@ static int save_fsynced(PRIV *priv) {
     WRITE_ONERR(id, fd, ERROR_DWRITE);
     status = write_FLIST(false, &priv->fsynced, fd, priv->stop);
     ONSTOP(priv->stop, ERROR_STOP);
-    if (ISERR(status)) {
-        status = ERROR_DWRITE;
-        goto error;
-    }
+    ONERR(status, ERROR_DWRITE);
     close(fd), fd = -1;
     tv[0].tv_sec = priv->t, tv[0].tv_usec = 0;
     tv[1].tv_sec = priv->t, tv[1].tv_usec = 0;
@@ -450,6 +450,7 @@ static int load_fsynced(PRIV *priv) {
     uint32_t id;
     int n;
 
+    ONSTOP(priv->stop, ERROR_STOP);
     sprintf(pathname, "%s/"SYNCDIR"/"LASTFILE, priv->dirname);
     if (stat(pathname, &st) == -1) {
         status = ERROR_DREAD;
@@ -464,10 +465,7 @@ static int load_fsynced(PRIV *priv) {
     if (!ISERR(n) && id == PSYNC_FILEID) {
         status = read_FLIST(false, &priv->fsynced, fd, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);
-        if (ISERR(status)) {
-            status = ERROR_DREAD;
-            goto error;
-        }
+        ONERR(status, ERROR_DREAD);
     }
     close(fd), fd = -1;
     priv->tlast = st.st_mtime;
@@ -553,8 +551,7 @@ static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *nam
                 !strcmp(ent->d_name, "..") )
                 continue;
             strcpy(p, ent->d_name);
-            status = get_flocal_r(flocal, flast, pathname, name, stop);
-            if (ISERR(status))
+            if (ISERR(status = get_flocal_r(flocal, flast, pathname, name, stop)))
                 goto error;
             if ((*flocal)->st.revision > fdir->st.revision)
                 fdir->st.revision = (*flocal)->st.revision;
@@ -576,6 +573,7 @@ static int get_flocal(PRIV *priv) {
     FLIST *flocal, *flast;
     struct dirent *ent;
 
+    ONSTOP(priv->stop, ERROR_STOP);
     if (stat(priv->dirname, &st) == -1) {
         status = ERROR_SREAD;
         goto error;
@@ -605,9 +603,16 @@ static int get_flocal(PRIV *priv) {
             !strcmp(ent->d_name, SYNCDIR) )
             continue;
         strcpy(name, ent->d_name);
-        status = get_flocal_r(&flocal, &flast, pathname, name, priv->stop);
-        if (ISERR(status))
+        if (ISERR(status = get_flocal_r(&flocal, &flast, pathname, name, priv->stop))) {
+            if (priv->info != -1)
+                switch (status) {
+                case ERROR_FTYPE:
+                case ERROR_FPERM:
+                    dprintf(priv->info, "!Unsupported file: %s\n", name);
+                    break;
+                }
             goto error;
+        }
     }
     closedir(dir), dir = NULL;
     status = 0;
@@ -769,6 +774,7 @@ static int preload(PRIV *priv) {
     FLIST *fsynced;
     char buffer[SYMLINK_MAX];
 
+    ONSTOP(priv->stop, ERROR_STOP);
     progress_init(&progress, priv->info, PROGRESS_INTERVAL, "U%+jd\n", uploadsize = 0);
     name = pathname, name += sprintf(name, "%s/", priv->dirname);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
@@ -818,6 +824,7 @@ static int upload(PRIV *priv) {
     ssize_t n;
     char buffer[LOADBUFFER_SIZE];
 
+    ONSTOP(priv->stop, ERROR_STOP);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
     for (fsynced = priv->fsynced.next; *fsynced->name; fsynced = fsynced->next) {
@@ -887,6 +894,7 @@ static int download(PRIV *priv) {
     char buffer[LOADBUFFER_SIZE];
     struct timeval tv[2];
 
+    ONSTOP(priv->stop, ERROR_STOP);
     progress_init(&progress, priv->info, PROGRESS_INTERVAL, "D%+jd\n", downloadsize = 0);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
@@ -966,6 +974,7 @@ static int commit(PRIV *priv) {
     FLIST *fsynced;
     struct timeval tv[2];
 
+    ONSTOP(priv->stop, ERROR_STOP);
     name = pathname, name += sprintf(name, "%s/", priv->dirname);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
@@ -1069,6 +1078,7 @@ static int make_log(PRIV *priv) {
     } count;
     FLIST *fsynced;
 
+    ONSTOP(priv->stop, ERROR_STOP);
     sprintf(pathname, "%s/"SYNCDIR"/"LOCKDIR"/"LOGFILE, priv->dirname);
     fp = fopen(pathname, "w");
     if (fp == NULL) {
@@ -1218,8 +1228,7 @@ static int clean_r(char *pathname, char *name,
                 !strcmp(ent->d_name, "..") )
                 continue;
             strcpy(name, ent->d_name);
-            status = clean_r(pathname, name + strlen(name), stop);
-            if (ISERR(status))
+            if (ISERR(status = clean_r(pathname, name + strlen(name), stop)))
                 goto error;
         }
         *--name = 0;
@@ -1247,7 +1256,8 @@ static int clean(PRIV *priv) {
     DIR *dir = NULL;
     struct dirent *ent;
     struct stat st;
-
+ 
+    ONSTOP(priv->stop, ERROR_STOP);
     p = pathname, p += sprintf(p, "%s/"SYNCDIR, priv->dirname);
     dir = opendir(pathname);
     if (dir == NULL) {
@@ -1269,10 +1279,8 @@ static int clean(PRIV *priv) {
         }
         if (st.st_mtime > priv->backup)
             continue;
-        if (ISERR(clean_r(pathname, p + strlen(p), priv->stop))) {
-            status = ERROR_DREMOVE;
+        if (ISERR(status = clean_r(pathname, p + strlen(p), priv->stop)))
             goto error;
-        }
     }
     *--p = 0;
     closedir(dir), dir = NULL;
@@ -1303,89 +1311,56 @@ static int run(int (*func)(SETS sets, FLIST *f1, FLIST *f2, void *data), PRIV *p
         .status = INT_MIN
     };
 
-    ONSTOP(priv->stop, ERROR_STOP);
     load_fsynced(priv);
-    ONSTOP(priv->stop, ERROR_STOP);
-    status = get_flocal(priv);
-    if (ISERR(status))
+    if (ISERR(status = get_flocal(priv)))
         goto error;
     ONSTOP(priv->stop, ERROR_STOP);
     status = sets_next_FLIST(&priv->flocal, &priv->fsynced, add_deleted_func, priv, priv->stop);
     ONSTOP(priv->stop, ERROR_STOP);
-    if (ISERR(status))
-        goto error;
+    ONERR(status, ERROR_SYSTEM);
     if (func != NULL) {
         status = read_FLIST(true, &priv->fremote, priv->fdin, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);
-        if (ISERR(status)) {
-            status = ERROR_SDNLD;
-            goto error;
-        }
+        ONERR(status, ERROR_SDNLD);
         status = sets_next_FLIST(&priv->flocal, &priv->fremote, func, priv, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);
-        if (ISERR(status))
-            goto error;
+        ONERR(status, ERROR_SYSTEM);
         status = write_FLIST(true, &priv->fsynced, priv->fdout, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);
-        if (ISERR(status)) {
-            status = ERROR_SUPLD;
-            goto error;
-        }
+        ONERR(status, ERROR_SUPLD);
     }
     else {
         status = write_FLIST(true, &priv->flocal, priv->fdout, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);
-        if (ISERR(status)) {
-            status = ERROR_SUPLD;
-            goto error;
-        }
+        ONERR(status, ERROR_SUPLD);
         status = each_next_FLIST(&priv->flocal, delete_func, NULL, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);
-        if (ISERR(status))
-            goto error;
+        ONERR(status, ERROR_SYSTEM);
         status = read_FLIST(true, &priv->fsynced, priv->fdin, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);
-        if (ISERR(status)) {
-            status = ERROR_SDNLD;
-            goto error;
-        }
+        ONERR(status, ERROR_SDNLD);
     }
-    status = save_fsynced(priv);
-    if (ISERR(status))
+    if (ISERR(status = save_fsynced(priv)))
         goto error;
-    ONSTOP(priv->stop, ERROR_STOP);
-    status = preload(priv);
-    if (ISERR(status))
+    if (ISERR(status = preload(priv)))
         goto error;
-    ONSTOP(priv->stop, ERROR_STOP);
     if (pthread_create(&upload_param.tid, NULL, upload_thread, &upload_param) != 0) {
         status = ERROR_SYSTEM;
         goto error;
     }
-    status = download(priv);
-    if (ISERR(status))
+    if (ISERR(status = download(priv)))
         goto error;
     if (pthread_join(upload_param.tid, NULL) != 0) {
         status = ERROR_SYSTEM;
         goto error;
     }
-    if (ISERR(upload_param.status)) {
-        status = upload_param.status;
+    ONERR(upload_param.status, upload_param.status);
+    if (ISERR(status = commit(priv)))
         goto error;
-    }
-    ONSTOP(priv->stop, ERROR_STOP);
-    status = commit(priv);
-    if (ISERR(status))
+    if (ISERR(status = make_log(priv)))
         goto error;
-    ONSTOP(priv->stop, ERROR_STOP);
-    status = make_log(priv);
-    if (ISERR(status))
+    if (ISERR(status = clean(priv)))
         goto error;
-    ONSTOP(priv->stop, ERROR_STOP);
-    status = clean(priv);
-    if (ISERR(status))
-        goto error;
-    ONSTOP(priv->stop, ERROR_STOP);
     status = 0;
 error:
     return status;

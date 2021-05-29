@@ -1,6 +1,6 @@
-/* psync_psp1.c - Last modified: 13-Mar-2020 (kobayasy)
+/* psync_psp1.c - Last modified: 28-May-2021 (kobayasy)
  *
- * Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -170,8 +170,6 @@ static int run(PSYNC_MODE mode, PRIV *priv) {
 error:
     if (psync != NULL)
         psync_free(psync);
-    if (priv->info != -1)
-        dprintf(priv->info, "R%+d\n", status);
     return status;
 }
 
@@ -180,9 +178,9 @@ static int run_master(PSYNC_MODE mode, PRIV *priv) {
     size_t length, n;
     int ack;
 
+    ONSTOP(priv->stop, ERROR_STOP);
     ONERR(greeting(priv), ERROR_PROTOCOL);
-    priv->config = priv->head.next;
-    while (*priv->config->name) {
+    for (priv->config = priv->head.next; *priv->config->name; priv->config = priv->config->next) {
         ONSTOP(priv->stop, ERROR_STOP);
         n = length = strlen(priv->config->name);
         WRITE_ONERR(n, priv->fdout, ERROR_PROTOCOL);
@@ -191,12 +189,9 @@ static int run_master(PSYNC_MODE mode, PRIV *priv) {
             goto error;
         }
         READ_ONERR(ack, priv->fdin, ERROR_PROTOCOL);
-        if (!ack) {
-            status = run(mode, priv);
-            if (ISERR(status))
-                goto done;
-        }
-        priv->config = priv->config->next;
+        if (!ack)
+            if (ISERR(status = run(mode, priv)))
+                goto error;
     }
     length = 0;
     WRITE_ONERR(length, priv->fdout, ERROR_PROTOCOL);
@@ -204,7 +199,6 @@ static int run_master(PSYNC_MODE mode, PRIV *priv) {
 error:
     if (priv->info != -1 && status)
         dprintf(priv->info, "!%+d\n", status);
-done:
     return status;
 }
 
@@ -215,6 +209,7 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
     int seek;
     int ack;
 
+    ONSTOP(priv->stop, ERROR_STOP);
     ONERR(greeting(priv), ERROR_PROTOCOL);
     READ_ONERR(length, priv->fdin, ERROR_PROTOCOL);
     while (length > 0) {
@@ -233,20 +228,17 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
         free(name), name = NULL;
         ack = seek ? -1 : 0;
         WRITE_ONERR(ack, priv->fdout, ERROR_PROTOCOL);
-        if (!ack) {
-            status = run(mode, priv);
-            if (ISERR(status))
-                goto done;
-        }
+        if (!ack)
+            if (ISERR(status = run(mode, priv)))
+                goto error;
         READ_ONERR(length, priv->fdin, ERROR_PROTOCOL);
     }
     status = 0;
 error:
-    if (priv->info != -1 && status)
-        dprintf(priv->info, "!%+d\n", status);
-done:
     if (name != NULL)
         free(name);
+    if (priv->info != -1 && status)
+        dprintf(priv->info, "!%+d\n", status);
     return status;
 }
 

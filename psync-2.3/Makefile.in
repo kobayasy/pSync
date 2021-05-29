@@ -1,7 +1,7 @@
 # @configure_input@
-# Makefile.in - Last modified: 13-Mar-2020 (kobayasy)
+# Makefile.in - Last modified: 28-May-2021 (kobayasy)
 #
-# Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+# Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -25,6 +25,8 @@
 
 TARGET = @PACKAGE_TARNAME@@EXEEXT@
 OBJS = psync.@OBJEXT@ psync_psp1.@OBJEXT@ popen3.@OBJEXT@ main.@OBJEXT@
+MAN1 = @PACKAGE_TARNAME@.1
+MAN5 = @PACKAGE_TARNAME@.conf.5
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -44,6 +46,9 @@ INSTALL = @INSTALL@
 
 VPATH = @srcdir@
 @SET_MAKE@
+
+.PHONY: all clean distclean install uninstall
+.PHONY: install-bin install-man1 install-man5 uninstall-bin uninstall-man1 uninstall-man5
 
 all : $(TARGET)
 
@@ -66,26 +71,27 @@ distclean : clean
 	$(RM) config.log config.status config.cache
 	$(RM) Makefile
 
-install : install-bin install-man
+install : install-bin install-man1 install-man5
 
-install-bin : all $(bindir)
-	$(INSTALL) -m755 -s $(TARGET) $(bindir)
+install-bin : $(TARGET)
+	test -d $(bindir) || $(INSTALL) -m755 -d $(bindir)
+	$(INSTALL) -m755 -s $^ $(bindir)
 
-install-man : all $(mandir)/ja/man1 $(mandir)/ja/man5
-	$(INSTALL) -m644 @PACKAGE_TARNAME@.1 $(mandir)/ja/man1
-	$(INSTALL) -m644 psync.conf.5 $(mandir)/ja/man5
+install-man1 : $(MAN1)
+	test -d $(mandir)/ja/man1 || $(INSTALL) -m755 -d $(mandir)/ja/man1
+	$(INSTALL) -m644 $^ $(mandir)/ja/man1
 
-uninstall : uninstall-bin uninstall-man
+install-man5 : $(MAN5)
+	test -d $(mandir)/ja/man5 || $(INSTALL) -m755 -d $(mandir)/ja/man5
+	$(INSTALL) -m644 $^ $(mandir)/ja/man5
+
+uninstall : uninstall-bin uninstall-man1 uninstall-man5
 
 uninstall-bin :
 	$(RM) $(addprefix $(bindir)/,$(TARGET))
 
-uninstall-man :
-	$(RM) $(mandir)/ja/man1/@PACKAGE_TARNAME@.1
-	$(RM) $(mandir)/ja/man5/psync.conf.5
+uninstall-man1 :
+	$(RM) $(addprefix $(mandir)/ja/man1/,$(MAN1))
 
-$(bindir) :
-	$(INSTALL) -m755 -d $@
-
-$(mandir)/ja/man% :
-	$(INSTALL) -m755 -d $@
+uninstall-man5 :
+	$(RM) $(addprefix $(mandir)/ja/man5/,$(MAN5))

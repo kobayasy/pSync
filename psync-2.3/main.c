@@ -1,6 +1,6 @@
-/* main.c - Last modified: 11-Mar-2020 (kobayasy)
+/* main.c - Last modified: 28-May-2021 (kobayasy)
  *
- * Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -40,7 +40,7 @@
 #include "psync_psp1.h"
 #include "popen3.h"
 
-#define VERSION "2.2"
+#define VERSION "2.3"
 #define CONFFILE ".psync.conf"
 
 #define ERROR_HELP    3
@@ -232,90 +232,98 @@ error:
 #define PROGBUF 128
 static void info_func(unsigned int id, const char *info) {
     static struct {
-        const char *id;
-        const char *dir;
+        const char *id, *dir;
         char name[PROGBUF];
-        intmax_t preload, upload;
+        intmax_t preload, upload, download;
         char buffer[PROGBUF];
-    } stat[2] = {
+    } progress[] = {
         {.id = "L:", .dir = "D:"},
         {.id = "R:", .dir = "U:"}
     };
     static unsigned int newline = 1;
-    unsigned int flags = 0;
+    enum {INFO_NONE=0, INFO_NEWLINE, INFO_STATUS, INFO_MESSAGE, INFO_PROGRESS} state = INFO_NONE;
     int status = INT_MIN;
-    intmax_t download = 0;
     char *s;
 
     switch (*info++) {
     case '[':
-        *stat[id].name = 0;
-        stat[id].preload = 0, stat[id].upload = 0;
-        *stat[id].buffer = 0;
-        flags |= 0x80;
+        *progress[id].name = 0;
+        progress[id].preload = 0, progress[id].upload = 0, progress[id].download = 0;
+        *progress[id].buffer = 0;
         break;
     case ']':
-        flags |= 0x80;
+        state = INFO_NEWLINE;
         break;
     case '!':
-        status = strtol(info, NULL, 10);
-        flags |= 0x10;
-        break;
-    case 'R':
         switch (*info) {
         case '+':
         case '-':
             status = strtol(info, NULL, 10);
-            flags |= 0x08;
+            state = INFO_STATUS;
             break;
         default:
-            strcpy(stat[id].name, info);
-            stat[id].preload = 0, stat[id].upload = 0;
-            *stat[id].buffer = 0;
-            flags |= 0x01;
+            state = INFO_MESSAGE;
+            break;
         }
         break;
+    case 'R':
+        strcpy(progress[id].name, info);
+        progress[id].preload = 0, progress[id].upload = 0, progress[id].download = 0;
+        *progress[id].buffer = 0;
+        state = INFO_PROGRESS;
+        break;
     case 'U':
-        stat[id].preload = strtoll(info, NULL, 10);
+        progress[id].preload = strtoll(info, NULL, 10);
         id = !id;
-        if (stat[!id].preload > stat[id].upload) {
-            stat[id].upload = stat[!id].preload;
-            flags |= 0x02;
+        if (progress[!id].preload > progress[id].upload) {
+            progress[id].upload = progress[!id].preload;
+            state = INFO_PROGRESS;
         }
         break;
     case 'D':
-        if (stat[!id].preload > stat[id].upload)
-            stat[id].upload = stat[!id].preload;
-        download = strtoll(info, NULL, 10);
-        flags |= 0x04;
+        if (progress[!id].preload > progress[id].upload)
+            progress[id].upload = progress[!id].preload;
+        progress[id].download = strtoll(info, NULL, 10);
+        state = INFO_PROGRESS;
         break;
     }
-    if (flags & 0x01)
-        if (!strcmp(stat[id].name, stat[!id].name))
-            dprintf(STDOUT_FILENO, "\n%s\n" + newline, stat[id].name), newline = 1;
-    if (flags & 0x06) {
-        s = stat[id].buffer;
-        s += sprintf(s, "  %s", stat[id].dir);
-        s += strfnum(s, 11, stat[id].upload);
-        s += sprintf(s, " ->");
-        s += strfnum(s, 11, download);
-        dprintf(STDOUT_FILENO, "\r%s%s" + newline, stat[0].buffer, stat[1].buffer), newline = 0;
-    }
-    if (flags & 0x08)
+    switch (state) {
+    case INFO_NONE:
+        break;
+    case INFO_NEWLINE:
+        if (newline == 0)
+            dprintf(STDOUT_FILENO, "\n"), newline = 1;
+        break;
+    case INFO_STATUS:
         switch (status) {
         case ERROR_NOTREADYLOCAL:
-            dprintf(STDOUT_FILENO, "\n  %sSkip, not ready\n" + newline, stat[id].id), newline = 1;
+            dprintf(STDOUT_FILENO, "\n%s%s  Skip, not ready\n" + newline, progress[id].id, progress[id].name), newline = 1;
             break;
         default:
             if (ISERR(status))
-                dprintf(STDOUT_FILENO, "\n  %s%s" + newline, stat[id].id, error_message(status)), newline = 0;
+                dprintf(STDOUT_FILENO, "\n%s%s  %s\n" + newline, progress[id].id, progress[id].name, error_message(status)), newline = 1;
         }
-    if (flags & 0x10)
-        if (ISERR(status))
-            dprintf(STDOUT_FILENO, "\n%s%s" + newline, stat[id].id, error_message(status)), newline = 0;
-    if (flags & 0x80)
-        if (newline == 0)
+        break;
+    case INFO_MESSAGE:
+        dprintf(STDOUT_FILENO, "\n%s%s  %s\n" + newline, progress[id].id, progress[id].name, info), newline = 1;
+        break;
+    case INFO_PROGRESS:
+        if (!strcmp(progress[id].name, progress[!id].name)) {
+            if (progress[id].upload > 0) {
+                s = progress[id].buffer;
+                s += sprintf(s, "  %s", progress[id].dir);
+                s += strfnum(s, 11, progress[id].upload);
+                if (progress[id].download > 0) {
+                    s += sprintf(s, " ->");
+                    s += strfnum(s, 11, progress[id].download);
+                }
+            }
+            dprintf(STDOUT_FILENO, "\r%s%s%s" + newline, progress[id].name, progress[0].buffer, progress[1].buffer), newline = 0;
+        }
+        else if (newline == 0)
             dprintf(STDOUT_FILENO, "\n"), newline = 1;
+        break;
+    }
 }
 
 static void sighandler(int signo) {

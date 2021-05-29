@@ -25,9 +25,9 @@ https://kobayasy.com/psync/
 
 ### ローカルホストへ pSync をインストールする手順:
 ```
-localhost$ curl -O http://kobayasy.com/psync/psync-2.2.tar.gz
-localhost$ tar xzf psync-2.2.tar.gz
-localhost$ cd psync-2.2
+localhost$ curl -O http://kobayasy.com/psync/psync-2.3.tar.gz
+localhost$ tar xzf psync-2.3.tar.gz
+localhost$ cd psync-2.3
 localhost$ ./configure --prefix=$HOME
 localhost$ make install
 localhost$ mkdir -m700 ~/pSync
@@ -47,9 +47,9 @@ localhost$
 
 ```
 localhost$ ssh guest@example.com
-example.com$ curl -O http://kobayasy.com/psync/psync-2.2.tar.gz
-example.com$ tar xzf psync-2.2.tar.gz
-example.com$ cd psync-2.2
+example.com$ curl -O http://kobayasy.com/psync/psync-2.3.tar.gz
+example.com$ tar xzf psync-2.3.tar.gz
+example.com$ cd psync-2.3
 example.com$ ./configure --prefix=$HOME
 example.com$ make install
 example.com$ mkdir -m700 ~/pSync
@@ -70,10 +70,10 @@ localhost$
 
 ```
 localhost$ psync --help
-pSync version 2.2 (protocol pSp1)
+pSync version 2.3 (protocol pSp1)
 (以下コマンドの説明が続く)
 localhost$ ssh guest@example.com psync --help
-pSync version 2.2 (protocol pSp1)
+pSync version 2.3 (protocol pSp1)
 (以下コマンドの説明が続く)
 localhost$ 
 ```
