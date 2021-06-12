@@ -1,4 +1,4 @@
-# .github/workflows/build.yml - Last modified: 29-May-2021 (kobayasy)
+# .github/workflows/build.yml - Last modified: 13-Jun-2021 (kobayasy)
 
 name: Build
 
@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         dist:
-          - psync-2.3
+          - psync-2.4
         os:
           - ubuntu-latest
           - macos-latest

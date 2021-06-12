@@ -1,4 +1,4 @@
-/* main.c - Last modified: 28-May-2021 (kobayasy)
+/* main.c - Last modified: 13-Jun-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -40,7 +40,7 @@
 #include "psync_psp1.h"
 #include "popen3.h"
 
-#define VERSION "2.3"
+#define VERSION "2.4"
 #define CONFFILE ".psync.conf"
 
 #define ERROR_HELP    3
@@ -157,8 +157,9 @@ error:
 
 static struct {
     volatile sig_atomic_t stop;
+    size_t length;
 } priv = {
-    0
+    .stop = 0
 };
 
 #define INFOBUF 128
@@ -229,72 +230,71 @@ error:
     return status;
 }
 
+#define INFO_NEWLINE  0x1
+#define INFO_MESSAGE  0x2
+#define INFO_STATUS   0x4
+#define INFO_PROGRESS 0x8
 #define PROGBUF 128
 static void info_func(unsigned int id, const char *info) {
     static struct {
         const char *id, *dir;
         char name[PROGBUF];
-        intmax_t preload, upload, download;
+        intmax_t upload;
         char buffer[PROGBUF];
     } progress[] = {
-        {.id = "L:", .dir = "D:"},
-        {.id = "R:", .dir = "U:"}
+        {.id = "L:", .dir = "D:", .name = "", .upload = 0, .buffer = ""},
+        {.id = "R:", .dir = "U:", .name = "", .upload = 0, .buffer = ""}
     };
     static unsigned int newline = 1;
-    enum {INFO_NONE=0, INFO_NEWLINE, INFO_STATUS, INFO_MESSAGE, INFO_PROGRESS} state = INFO_NONE;
+    static char name[PROGBUF] = "";
+    intmax_t download = 0;
     int status = INT_MIN;
+    unsigned int state = 0;
     char *s;
 
     switch (*info++) {
     case '[':
-        *progress[id].name = 0;
-        progress[id].preload = 0, progress[id].upload = 0, progress[id].download = 0;
-        *progress[id].buffer = 0;
-        break;
     case ']':
-        state = INFO_NEWLINE;
+        state |= INFO_NEWLINE;
         break;
     case '!':
         switch (*info) {
         case '+':
         case '-':
             status = strtol(info, NULL, 10);
-            state = INFO_STATUS;
+            state |= INFO_STATUS;
             break;
         default:
-            state = INFO_MESSAGE;
+            state |= INFO_MESSAGE;
             break;
         }
         break;
     case 'R':
         strcpy(progress[id].name, info);
-        progress[id].preload = 0, progress[id].upload = 0, progress[id].download = 0;
-        *progress[id].buffer = 0;
-        state = INFO_PROGRESS;
-        break;
-    case 'U':
-        progress[id].preload = strtoll(info, NULL, 10);
-        id = !id;
-        if (progress[!id].preload > progress[id].upload) {
-            progress[id].upload = progress[!id].preload;
-            state = INFO_PROGRESS;
+        progress[id].upload = 0;
+        if (!strcmp(progress[id].name, progress[!id].name)) {
+            strcpy(name, progress[id].name);
+            *progress[id].buffer = 0, *progress[!id].buffer = 0;
+            state |= INFO_NEWLINE;
+            if (*name)
+                state |= INFO_PROGRESS;
         }
         break;
+    case 'U':
+        progress[id].upload = strtoll(info, NULL, 10);
+        state |= INFO_PROGRESS;
+        break;
     case 'D':
-        if (progress[!id].preload > progress[id].upload)
-            progress[id].upload = progress[!id].preload;
-        progress[id].download = strtoll(info, NULL, 10);
-        state = INFO_PROGRESS;
+        download = strtoll(info, NULL, 10);
+        state |= INFO_PROGRESS;
         break;
     }
-    switch (state) {
-    case INFO_NONE:
-        break;
-    case INFO_NEWLINE:
+    if (state & INFO_NEWLINE)
         if (newline == 0)
             dprintf(STDOUT_FILENO, "\n"), newline = 1;
-        break;
-    case INFO_STATUS:
+    if (state & INFO_MESSAGE)
+        dprintf(STDOUT_FILENO, "\n%s%s  %s\n" + newline, progress[id].id, progress[id].name, info), newline = 1;
+    if (state & INFO_STATUS)
         switch (status) {
         case ERROR_NOTREADYLOCAL:
             dprintf(STDOUT_FILENO, "\n%s%s  Skip, not ready\n" + newline, progress[id].id, progress[id].name), newline = 1;
@@ -303,26 +303,20 @@ static void info_func(unsigned int id, const char *info) {
             if (ISERR(status))
                 dprintf(STDOUT_FILENO, "\n%s%s  %s\n" + newline, progress[id].id, progress[id].name, error_message(status)), newline = 1;
         }
-        break;
-    case INFO_MESSAGE:
-        dprintf(STDOUT_FILENO, "\n%s%s  %s\n" + newline, progress[id].id, progress[id].name, info), newline = 1;
-        break;
-    case INFO_PROGRESS:
-        if (!strcmp(progress[id].name, progress[!id].name)) {
-            if (progress[id].upload > 0) {
-                s = progress[id].buffer;
-                s += sprintf(s, "  %s", progress[id].dir);
-                s += strfnum(s, 11, progress[id].upload);
-                if (progress[id].download > 0) {
-                    s += sprintf(s, " ->");
-                    s += strfnum(s, 11, progress[id].download);
-                }
+    if (state & INFO_PROGRESS) {
+        if (progress[id].upload > 0) {
+            s = progress[id].buffer;
+            s += sprintf(s, "  %s", progress[id].dir);
+            s += strfnum(s, 11, progress[id].upload);
+            if (download > 0) {
+                s += sprintf(s, " ->");
+                s += strfnum(s, 11, download);
             }
-            dprintf(STDOUT_FILENO, "\r%s%s%s" + newline, progress[id].name, progress[0].buffer, progress[1].buffer), newline = 0;
         }
-        else if (newline == 0)
-            dprintf(STDOUT_FILENO, "\n"), newline = 1;
-        break;
+        if (*progress[0].buffer || *progress[1].buffer)
+            dprintf(STDOUT_FILENO, "\r%-*s%s%s" + newline, priv.length, name, progress[0].buffer, progress[1].buffer), newline = 0;
+        else
+            dprintf(STDOUT_FILENO, "\r%s" + newline, name), newline = 0;
     }
 }
 
@@ -430,6 +424,7 @@ static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
 #define CONFTOK " \t\r\n"
 static int get_config(const char *confname, PSP *psp) {
     int status = INT_MIN;
+    size_t length = 0;
     FILE *fp = NULL;
     unsigned int line;
     char buffer[CONFBUF];
@@ -437,6 +432,7 @@ static int get_config(const char *confname, PSP *psp) {
     char *name;
     unsigned int argc;
     char *argv, *s;
+    size_t l;
 
     fp = fopen(confname, "r");
     if (fp == NULL) {
@@ -460,6 +456,9 @@ static int get_config(const char *confname, PSP *psp) {
                     goto error;
                 }
                 name = argv;
+                l = strlen(name);
+                if (l > length)
+                    length = l;
                 break;
             case 2:
                 if (name == NULL) {
@@ -508,7 +507,7 @@ static int get_config(const char *confname, PSP *psp) {
             goto error;
         }
     }
-    status = 0;
+    status = length;
 error:
     if (fp != NULL)
         fclose(fp);
@@ -672,6 +671,7 @@ int main(int argc, char *argv[]) {
     status = get_config(CONFFILE, psp);
     if (ISERR(status))
         goto run;
+    priv.length = status;
     status = get_opts(argv, &opts);
 run:
     switch (status) {

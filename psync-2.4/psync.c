@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 28-May-2021 (kobayasy)
+/* psync.c - Last modified: 12-Jun-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -804,6 +804,11 @@ static int preload(PRIV *priv) {
                 }
                 break;
             }
+            break;
+        }
+        switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE)) {
+        case FST_DNLD|FST_RREG:
+        case FST_DNLD|FST_RLNK:
             progress_update(&progress, uploadsize += fsynced->st.size);
             break;
         }

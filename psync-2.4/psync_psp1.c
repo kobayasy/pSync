@@ -1,4 +1,4 @@
-/* psync_psp1.c - Last modified: 28-May-2021 (kobayasy)
+/* psync_psp1.c - Last modified: 13-Jun-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -147,8 +147,6 @@ static int run(PSYNC_MODE mode, PRIV *priv) {
     PSYNC *psync = NULL;
     int ack_local, ack_remote;
 
-    if (priv->info != -1)
-        dprintf(priv->info, "R%s\n", priv->config->name);
     psync = psync_new(priv->config->dirname, priv->stop);
     ack_local = psync == NULL ? -1 : 0;
     WRITE_ONERR(ack_local, priv->fdout, ERROR_PROTOCOL);
@@ -189,9 +187,14 @@ static int run_master(PSYNC_MODE mode, PRIV *priv) {
             goto error;
         }
         READ_ONERR(ack, priv->fdin, ERROR_PROTOCOL);
-        if (!ack)
+        if (!ack) {
+            if (priv->info != -1)
+                dprintf(priv->info, "R%s\n", priv->config->name);
             if (ISERR(status = run(mode, priv)))
                 goto error;
+            if (priv->info != -1)
+                dprintf(priv->info, "R\n");
+        }
     }
     length = 0;
     WRITE_ONERR(length, priv->fdout, ERROR_PROTOCOL);
@@ -228,9 +231,14 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
         free(name), name = NULL;
         ack = seek ? -1 : 0;
         WRITE_ONERR(ack, priv->fdout, ERROR_PROTOCOL);
-        if (!ack)
+        if (!ack) {
+            if (priv->info != -1)
+                dprintf(priv->info, "R%s\n", priv->config->name);
             if (ISERR(status = run(mode, priv)))
                 goto error;
+            if (priv->info != -1)
+                dprintf(priv->info, "R\n");
+        }
         READ_ONERR(length, priv->fdin, ERROR_PROTOCOL);
     }
     status = 0;
