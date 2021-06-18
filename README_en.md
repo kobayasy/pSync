@@ -1,4 +1,4 @@
-[[Japanese/日本語](README_jp.md)]
+[[Japanese/日本語](README_ja.md)]
 
 [![Build Status](https://github.com/kobayasy/pSync/workflows/Build/badge.svg)](https://github.com/kobayasy/pSync/actions)
 

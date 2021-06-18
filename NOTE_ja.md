@@ -1,4 +1,4 @@
-[[README](README_jp.md)]
+[[README](README_ja.md)]
 
 ## 使い方のヒント
 
