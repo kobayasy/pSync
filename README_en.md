@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/kobayasy/pSync/workflows/Build/badge.svg)](https://github.com/kobayasy/pSync/actions)
 
-<div align="center"><img src="psync.png" title="pSync"></div>
+<div align="center"><img src="psync.png" alt="pSync"></div>
 
 This is an open-source cloud storage.  
 Securely and speedy synchronize your files by authenticate, encrypt and compress with [OpenSSH].  
@@ -18,7 +18,7 @@ make install
 ```
 2. Add ~/bin in the PATH if not included.  
 3. When using for the 1st time, do the following too.  
-For example, if the sync-directory is ~/pSync .  
+For example, if the sync-directory is `~/pSync`.  
 ```
 mkdir ~/pSync && chmod 700 ~/pSync
 cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
@@ -32,7 +32,7 @@ psync pSync
 ```
 psync --help
 ```
-2. For example, when synchronizing with guest@example.com .  
+2. For example, when synchronizing with `guest@example.com`.  
 ```
 psync guest@example.com
 ```

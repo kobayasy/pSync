@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/kobayasy/pSync/workflows/Build/badge.svg)](https://github.com/kobayasy/pSync/actions)
 
-<div align="center"><img src="psync.png" title="pSync"></div>
+<div align="center"><img src="psync.png" alt="pSync"></div>
 
 オープンソースのクラウドストーレージです。  
 [OpenSSH] によって認証/暗号化/圧縮を行い、安全かつ高速にファイル同期を行ないます。  
@@ -18,7 +18,7 @@ make install
 ```
 2. PATH に ~/bin が含まれていない場合は追加してください。  
 3. 始めて使う場合は以下の手順も必要です。  
-これは ~/pSync を同期ディレクトリにする例です。  
+これは `~/pSync` を同期ディレクトリにする例です。  
 ```
 mkdir ~/pSync && chmod 700 ~/pSync
 cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
@@ -32,7 +32,7 @@ psync pSync
 ```
 psync --help
 ```
-2. 例えば guest@example.com と同期する場合は以下の手順になります。  
+2. 例えば `guest@example.com` と同期する場合は以下の手順になります。  
 ```
 psync guest@example.com
 ```
