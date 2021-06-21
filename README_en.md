@@ -8,7 +8,7 @@ This is an open-source cloud storage.
 Securely and speedy synchronize your files by authenticate, encrypt and compress with [OpenSSH].  
 So for this to work, you must be able to login to the sync-host with [OpenSSH].  
 
-### Install:
+### Installation:
 This work is required for each sync-host include local-host.  
 1. Do the following to build and install.  
 ```
