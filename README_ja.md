@@ -13,6 +13,8 @@
 1. 以下の手順でビルドとインストールを行ないます。  
 ```
 curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.4/psync-2.4.tar.gz
+tar xzf psync-2.4.tar.gz
+cd psync-2.4
 ./configure --prefix=$HOME
 make install
 ```
