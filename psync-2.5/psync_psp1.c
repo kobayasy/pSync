@@ -1,4 +1,4 @@
-/* psync_psp1.c - Last modified: 13-Jun-2021 (kobayasy)
+/* psync_psp1.c - Last modified: 26-Jun-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -34,8 +34,12 @@
 #include "psync.h"
 #include "psync_psp1.h"
 
+#ifndef EXPIRE_DEFAULT
 #define EXPIRE_DEFAULT 400  /* [day] */
+#endif  /* #ifndef EXPIRE_DEFAULT */
+#ifndef BACKUP_DEFAULT
 #define BACKUP_DEFAULT   3  /* [day] */
+#endif  /* #ifndef BACKUP_DEFAULT */
 
 typedef struct s_clist {
     struct s_clist *next, *prev;
@@ -192,8 +196,11 @@ static int run_master(PSYNC_MODE mode, PRIV *priv) {
                 dprintf(priv->info, "R%s\n", priv->config->name);
             if (ISERR(status = run(mode, priv)))
                 goto error;
-            if (priv->info != -1)
+            if (priv->info != -1) {
+                if (status)
+                    dprintf(priv->info, "!%+d\n", status);
                 dprintf(priv->info, "R\n");
+            }
         }
     }
     length = 0;
@@ -236,8 +243,11 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
                 dprintf(priv->info, "R%s\n", priv->config->name);
             if (ISERR(status = run(mode, priv)))
                 goto error;
-            if (priv->info != -1)
+            if (priv->info != -1) {
+                if (status)
+                    dprintf(priv->info, "!%+d\n", status);
                 dprintf(priv->info, "R\n");
+            }
         }
         READ_ONERR(length, priv->fdin, ERROR_PROTOCOL);
     }

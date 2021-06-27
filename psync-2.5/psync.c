@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 12-Jun-2021 (kobayasy)
+/* psync.c - Last modified: 26-Jun-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -43,11 +43,21 @@
 #include "psync_utils.h"
 #include "psync.h"
 
+#ifndef EXPIRE_DEFAULT
 #define EXPIRE_DEFAULT (400*24*60*60)  /* [sec] */
+#endif  /* #ifndef EXPIRE_DEFAULT */
+#ifndef BACKUP_DEFAULT
 #define BACKUP_DEFAULT   (3*24*60*60)  /* [sec] */
+#endif  /* #ifndef BACKUP_DEFAULT */
+#ifndef POLL_TIMEOUT
 #define POLL_TIMEOUT 100000  /* [msec] */
+#endif  /* #ifndef POLL_TIMEOUT */
+#ifndef LOADBUFFER_SIZE
 #define LOADBUFFER_SIZE (16*1024)  /* [byte] */
+#endif  /* #ifndef LOADBUFFER_SIZE */
+#ifndef PROGRESS_INTERVAL
 #define PROGRESS_INTERVAL 1000  /* [msec] */
+#endif  /* #ifndef PROGRESS_INTERVAL */
 
 #ifndef SYMLINK_MAX
 #define SYMLINK_MAX PATH_MAX

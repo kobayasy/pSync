@@ -1,4 +1,4 @@
-/* main.c - Last modified: 13-Jun-2021 (kobayasy)
+/* main.c - Last modified: 27-Jun-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -23,6 +23,10 @@
  * SOFTWARE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif  /* #ifdef HAVE_CONFIG_H */
+
 #include <ctype.h>
 #include <limits.h>
 #include <stdbool.h>
@@ -36,11 +40,13 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#ifdef HAVE_FUNCTGETENT
+#include <termcap.h>
+#endif  /* #ifdef HAVE_FUNCTGETENT */
 #include "psync_utils.h"
 #include "psync_psp1.h"
 #include "popen3.h"
 
-#define VERSION "2.4"
 #define CONFFILE ".psync.conf"
 
 #define ERROR_HELP    3
@@ -158,11 +164,15 @@ error:
 static struct {
     volatile sig_atomic_t stop;
     size_t length;
+    char *format;
+    int columns;
 } priv = {
-    .stop = 0
+    .stop = 0,
+    .format = NULL,
+    .columns = 80
 };
 
-#define INFOBUF 128
+#define INFOBUF 1024
 typedef struct {
     void (*func)(unsigned int id, const char *info);
     int fd;
@@ -230,11 +240,62 @@ error:
     return status;
 }
 
+#ifdef HAVE_FUNCTGETENT
+static char *progress_format(int *columns) {
+    char *format = NULL;
+    char ent[1024];
+    char buffer[1024], *s;
+    int n;
+
+    s = getenv("TERM");
+    if (s == NULL)
+        goto error;
+    if (tgetent(ent, s) != 1)
+        goto error;
+    s = buffer;
+    if (tgetstr("mr", &s) == NULL)
+        goto error;
+    --s;
+    s += sprintf(s, "%%.*s");
+    if (tgetstr("me", &s) == NULL)
+        goto error;
+    --s;
+    s += sprintf(s, "%%s");
+    if (columns != NULL) {
+        n = tgetnum("co");
+        if (n != -1)
+            *columns = n;
+    }
+    format = strdup(buffer);
+error:
+    return format;
+}
+#endif  /* #ifdef HAVE_FUNCTGETENT */
+
+static char *progress_bar(char *buffer, const char *format,
+                          const char *text, intmax_t current, intmax_t goal ) {
+    size_t n;
+
+    if (format != NULL) {
+        n = strlen(text);
+        if (current < goal)
+            n = current * n / goal;
+        if (n > 0)
+            sprintf(buffer, format, n, text, text + n);
+        else
+            strcpy(buffer, text);
+    }
+    else
+        strcpy(buffer, text);
+    return buffer;
+}
+
 #define INFO_NEWLINE  0x1
 #define INFO_MESSAGE  0x2
 #define INFO_STATUS   0x4
 #define INFO_PROGRESS 0x8
-#define PROGBUF 128
+#define PROGBUF 1024
+#define PROGBAR   25
 static void info_func(unsigned int id, const char *info) {
     static struct {
         const char *id, *dir;
@@ -242,15 +303,15 @@ static void info_func(unsigned int id, const char *info) {
         intmax_t upload;
         char buffer[PROGBUF];
     } progress[] = {
-        {.id = "L:", .dir = "D:", .name = "", .upload = 0, .buffer = ""},
-        {.id = "R:", .dir = "U:", .name = "", .upload = 0, .buffer = ""}
+        {.id = "L:", .dir = "D", .name = "", .upload = 0, .buffer = ""},
+        {.id = "R:", .dir = "U", .name = "", .upload = 0, .buffer = ""}
     };
     static unsigned int newline = 1;
     static char name[PROGBUF] = "";
     intmax_t download = 0;
     int status = INT_MIN;
     unsigned int state = 0;
-    char *s;
+    char buffer[PROGBAR+1], *s;
 
     switch (*info++) {
     case '[':
@@ -281,12 +342,16 @@ static void info_func(unsigned int id, const char *info) {
         }
         break;
     case 'U':
-        progress[id].upload = strtoll(info, NULL, 10);
-        state |= INFO_PROGRESS;
+        if (priv.columns > priv.length + (1+PROGBAR)*2) {
+            progress[id].upload = strtoll(info, NULL, 10);
+            state |= INFO_PROGRESS;
+        }
         break;
     case 'D':
-        download = strtoll(info, NULL, 10);
-        state |= INFO_PROGRESS;
+        if (priv.columns > priv.length + (1+PROGBAR)*2) {
+            download = strtoll(info, NULL, 10);
+            state |= INFO_PROGRESS;
+        }
         break;
     }
     if (state & INFO_NEWLINE)
@@ -305,13 +370,17 @@ static void info_func(unsigned int id, const char *info) {
         }
     if (state & INFO_PROGRESS) {
         if (progress[id].upload > 0) {
-            s = progress[id].buffer;
-            s += sprintf(s, "  %s", progress[id].dir);
-            s += strfnum(s, 11, progress[id].upload);
+            s = buffer;
+            s += sprintf(s, "[%s", progress[id].dir);
             if (download > 0) {
-                s += sprintf(s, " ->");
                 s += strfnum(s, 11, download);
+                s += sprintf(s, " /");
             }
+            s += strfnum(s, 11, progress[id].upload);
+            s += sprintf(s, "]");
+            s = progress[id].buffer;
+            *s++ = ' ';
+            progress_bar(s, priv.format, buffer, download, progress[id].upload);
         }
         if (*progress[0].buffer || *progress[1].buffer)
             dprintf(STDOUT_FILENO, "\r%-*s%s%s" + newline, priv.length, name, progress[0].buffer, progress[1].buffer), newline = 0;
@@ -419,7 +488,7 @@ static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
     return status;
 }
 
-#define CONFBUF 128
+#define CONFBUF 1024
 #define CONFREM '#'
 #define CONFTOK " \t\r\n"
 static int get_config(const char *confname, PSP *psp) {
@@ -615,8 +684,8 @@ error:
 }
 
 static void usage(const char *argv0, FILE *fp) {
-    fprintf(fp, "pSync version %s (protocol %c%c%c%u)\n"
-                "\n", VERSION, PSYNC_PROTID, PSYNC_PROTID >> 8, PSYNC_PROTID >> 16, PSYNC_PROTID >> 24 );
+    fprintf(fp, "%s (protocol %c%c%c%u)\n"
+                "\n", PACKAGE_STRING, PSYNC_PROTID, PSYNC_PROTID >> 8, PSYNC_PROTID >> 16, PSYNC_PROTID >> 24 );
     fprintf(fp, "Usage: %s [--sync] [-v|-q] [USER@]HOST[#PORT]\n"
                 "       %s --put [-v|-q] [USER@]HOST[#PORT]\n"
                 "       %s --get [-v|-q] [USER@]HOST[#PORT]\n"
@@ -672,6 +741,9 @@ int main(int argc, char *argv[]) {
     if (ISERR(status))
         goto run;
     priv.length = status;
+#ifdef HAVE_FUNCTGETENT
+    priv.format = progress_format(&priv.columns);
+#endif  /* #ifdef HAVE_FUNCTGETENT */
     status = get_opts(argv, &opts);
 run:
     switch (status) {
@@ -683,6 +755,8 @@ run:
             fputc('\n', stdout);
         usage(basename(*argv), stdout);
     }
+    if (priv.format != NULL)
+        free(priv.format);
     if (psp != NULL)
         psp_free(psp);
     if (ISERR(status))

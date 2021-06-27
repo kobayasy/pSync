@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 13-Jun-2021 (kobayasy)
+# Makefile.in - Last modified: 26-Jun-2021 (kobayasy)
 #
 # Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -25,8 +25,8 @@
 
 TARGET = @PACKAGE_TARNAME@@EXEEXT@
 OBJS = psync.@OBJEXT@ psync_psp1.@OBJEXT@ popen3.@OBJEXT@ main.@OBJEXT@
-MAN1 = @PACKAGE_TARNAME@.1
-MAN5 = @PACKAGE_TARNAME@.conf.5
+MAN1JA = @PACKAGE_TARNAME@.1
+MAN5JA = @PACKAGE_TARNAME@.conf.5
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -36,6 +36,7 @@ mandir = @mandir@
 
 CC = @CC@
 CFLAGS  = @CFLAGS@
+CFLAGS += -I.
 #CFLAGS += -Wall
 #CFLAGS += -Wno-shift-count-overflow
 #CFLAGS += -Wno-string-plus-int
@@ -48,7 +49,7 @@ VPATH = @srcdir@
 @SET_MAKE@
 
 .PHONY: all clean distclean install uninstall
-.PHONY: install-bin install-man1 install-man5 uninstall-bin uninstall-man1 uninstall-man5
+.PHONY: install-bin install-man1ja install-man5ja uninstall-bin uninstall-man1ja uninstall-man5ja
 
 all : $(TARGET)
 
@@ -58,7 +59,7 @@ $(TARGET) : $(OBJS)
 psync.@OBJEXT@ : psync.c psync_utils.h psync.h
 psync_psp1.@OBJEXT@ : psync_psp1.c psync_utils.h psync.h psync_psp1.h
 popen3.@OBJEXT@ : popen3.c popen3.h
-main.@OBJEXT@ : main.c psync_utils.h psync_psp1.h psync.h popen3.h
+main.@OBJEXT@ : main.c psync_utils.h psync_psp1.h psync.h popen3.h config.h
 
 %.@OBJEXT@ : %.c
 	$(CC) $(CFLAGS) $(DEFS) -c $<
@@ -69,29 +70,29 @@ clean :
 
 distclean : clean
 	$(RM) config.log config.status config.cache
-	$(RM) Makefile
+	$(RM) Makefile config.h
 
-install : install-bin install-man1 install-man5
+install : install-bin install-man1ja install-man5ja
 
 install-bin : $(TARGET)
 	test -d $(DESTDIR)$(bindir) || $(INSTALL) -m755 -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m755 -s $^ $(DESTDIR)$(bindir)
 
-install-man1 : $(MAN1)
-	test -d $(DESTDIR)$(mandir)/ja/man1 || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man1
-	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man1
+install-man1ja : $(MAN1JA)
+	test -d $(DESTDIR)$(mandir)/ja/man1ja || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man1ja
+	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man1ja
 
-install-man5 : $(MAN5)
-	test -d $(DESTDIR)$(mandir)/ja/man5 || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man5
-	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man5
+install-man5ja : $(MAN5JA)
+	test -d $(DESTDIR)$(mandir)/ja/man5ja || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man5ja
+	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man5ja
 
-uninstall : uninstall-bin uninstall-man1 uninstall-man5
+uninstall : uninstall-bin uninstall-man1ja uninstall-man5ja
 
 uninstall-bin :
 	$(RM) $(addprefix $(DESTDIR)$(bindir)/,$(TARGET))
 
-uninstall-man1 :
-	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man1/,$(MAN1))
+uninstall-man1ja :
+	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man1ja/,$(MAN1JA))
 
-uninstall-man5 :
-	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man5/,$(MAN5))
+uninstall-man5ja :
+	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man5ja/,$(MAN5JA))
