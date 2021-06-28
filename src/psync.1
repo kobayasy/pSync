@@ -1,4 +1,4 @@
-./" psync.1 - Last modified: 27-Jun-2021 (kobayasy)
+./" psync.1 - Last modified: 28-Jun-2021 (kobayasy)
 ./"
 ./" Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 ./"
@@ -22,7 +22,7 @@
 ./" CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ./" SOFTWARE.
 ./"
-.Dd June 27, 2021
+.Dd June 28, 2021
 .Dt PSYNC 1
 .Os POSIX
 .Sh NAME
@@ -133,22 +133,18 @@ pSync は同期相手側としてリモートで起動される場合も含め�
 識別名に付いては
 .Xr psync.conf 5
 を参照。
-.It Li [D Va ダウンロードしたバイト数 Li / Va ダウンロードするバイト数 Li ]
-.Dq Li [
+.It Bq Li D Va ダウンロードしたバイト数 Li / Va ダウンロードするバイト数
+.Dq Bo Li D
 と
-.Dq Li ]
-で囲われ
-.Dq Li D
-から始まる表示はダウンロードの進捗状況。
+.Dq Bc
+で囲われた表示はダウンロードの進捗状況。
 .Dq Li /
 の左側は既にダウンロードが済んでいるバイト数を、右側はダウンロードする総バイト数をそれぞれ示す。
-.It Li [U Va アップロードしたバイト数 Li / Va アップロードするバイト数 Li ]
-.Dq Li [
+.It Bq Li U Va アップロードしたバイト数 Li / Va アップロードするバイト数
+.Dq Bo Li U
 と
-.Dq Li ]
-で囲われ
-.Dq Li U
-から始まる表示はアップロードの進捗状況。
+.Dq Bc
+で囲われた表示はアップロードの進捗状況。
 .Dq Li /
 の左側は既にアップロードが済んでいるバイト数を、右側はアップロードする総バイト数をそれぞれ示す。
 .It Li L: Va 同期元のエラーメッセージ

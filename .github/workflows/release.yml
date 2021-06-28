@@ -1,4 +1,4 @@
-# .github/workflows/release.yml - Last modified: 25-Jun-2021 (kobayasy)
+# .github/workflows/release.yml - Last modified: 28-Jun-2021 (kobayasy)
 
 name: Release
 
@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         dist:
-          - psync-2.5
+          - psync-2.6
         os:
           - ubuntu-latest
     runs-on: ${{ matrix.os }}
@@ -27,8 +27,10 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: pSync ${{ github.ref }}
-      - name: Set up Upload
-        run: test -e ${{ matrix.dist }}.tar.gz || tar czf ${{ matrix.dist }}.tar.gz ${{ matrix.dist }}
+      - name: Preparate
+        run: |
+          ln -s src ${{ matrix.dist }}
+          tar chzf ${{ matrix.dist }}.tar.gz ${{ matrix.dist }}
       - name: Upload
         uses: actions/upload-release-asset@v1
         env:

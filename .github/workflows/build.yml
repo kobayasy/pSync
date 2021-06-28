@@ -1,4 +1,4 @@
-# .github/workflows/build.yml - Last modified: 25-Jun-2021 (kobayasy)
+# .github/workflows/build.yml - Last modified: 28-Jun-2021 (kobayasy)
 
 name: Build
 
@@ -11,8 +11,6 @@ jobs:
   test:
     strategy:
       matrix:
-        dist:
-          - psync-2.5
         os:
           - ubuntu-latest
           - macos-latest
@@ -20,9 +18,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Set up Build
-        run: test -e ${{ matrix.dist }} || tar xzf ${{ matrix.dist }}.tar.gz
       - name: Build and install
-        run: cd ${{ matrix.dist }} && ./configure --prefix=$HOME && make install distclean
+        run: |
+          mkdir build
+          cd build
+          ../src/configure --prefix=$HOME
+          make install distclean
+          cd ..
+          rmdir build
       - name: Run
-        run: mkdir -m700 ~/pSync && echo 'psync pSync' > ~/.psync.conf && chmod 600 ~/.psync.conf && ~/bin/psync --help
+        run: |
+          mkdir -m700 ~/pSync
+          echo 'psync pSync' > ~/.psync.conf
+          chmod 600 ~/.psync.conf
+          ~/bin/psync --help

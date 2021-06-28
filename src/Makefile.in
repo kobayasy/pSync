@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 26-Jun-2021 (kobayasy)
+# Makefile.in - Last modified: 28-Jun-2021 (kobayasy)
 #
 # Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -79,12 +79,12 @@ install-bin : $(TARGET)
 	$(INSTALL) -m755 -s $^ $(DESTDIR)$(bindir)
 
 install-man1ja : $(MAN1JA)
-	test -d $(DESTDIR)$(mandir)/ja/man1ja || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man1ja
-	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man1ja
+	test -d $(DESTDIR)$(mandir)/ja/man1 || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man1
+	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man1
 
 install-man5ja : $(MAN5JA)
-	test -d $(DESTDIR)$(mandir)/ja/man5ja || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man5ja
-	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man5ja
+	test -d $(DESTDIR)$(mandir)/ja/man5 || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man5
+	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man5
 
 uninstall : uninstall-bin uninstall-man1ja uninstall-man5ja
 
@@ -92,7 +92,7 @@ uninstall-bin :
 	$(RM) $(addprefix $(DESTDIR)$(bindir)/,$(TARGET))
 
 uninstall-man1ja :
-	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man1ja/,$(MAN1JA))
+	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man1/,$(MAN1JA))
 
 uninstall-man5ja :
-	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man5ja/,$(MAN5JA))
+	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man5/,$(MAN5JA))
