@@ -1,6 +1,7 @@
 [[Japanese/日本語](README_ja.md)]
 
 [![Build Status](https://github.com/kobayasy/pSync/workflows/Build/badge.svg)](https://github.com/kobayasy/pSync/actions)
+[![Build Status](https://github.com/kobayasy/pSync/workflows/CodeQL/badge.svg)](https://github.com/kobayasy/pSync/security/code-scanning)
 
 <div align="center"><img src="psync.png" alt="pSync"></div>
 
