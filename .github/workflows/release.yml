@@ -1,4 +1,5 @@
-# .github/workflows/release.yml - Last modified: 28-Jun-2021 (kobayasy)
+# .github/workflows/release.yml
+# Last modified: 29-Jun-2021 (kobayasy)
 
 name: Release
 
