@@ -1,5 +1,5 @@
 # .github/workflows/release.yml
-# Last modified: 29-Jun-2021 (kobayasy)
+# Last modified: 01-Jul-2021 (kobayasy)
 
 name: Release
 
@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         dist:
-          - psync-2.6
+          - psync-2.7
         os:
           - ubuntu-latest
     runs-on: ${{ matrix.os }}

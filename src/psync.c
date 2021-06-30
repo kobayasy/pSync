@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 26-Jun-2021 (kobayasy)
+/* psync.c - Last modified: 01-Jul-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -371,13 +371,14 @@ static int unlock(PRIV *priv) {
     char loadname[PATH_MAX], *p;
     char pathname[PATH_MAX], *name;
     struct timeval tv[2];
+    struct tm tm;
 
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR, priv->dirname);
     tv[0].tv_sec = priv->t, tv[0].tv_usec = 0;
     tv[1].tv_sec = priv->t, tv[1].tv_usec = 0;
     utimes(loadname, tv);
     name = pathname, name += sprintf(name, "%s/"SYNCDIR"/", priv->dirname);
-    strftime(name, sizeof(pathname) - (name - pathname), BACKDIR, localtime(&priv->t));
+    strftime(name, sizeof(pathname) - (name - pathname), BACKDIR, localtime_r(&priv->t, &tm));
     status = rename(loadname, pathname) == -1 ? 1 : 0;
     return status;
 }
