@@ -12,8 +12,6 @@ jobs:
   dist:
     strategy:
       matrix:
-        dist:
-          - psync-2.7
         os:
           - ubuntu-latest
     runs-on: ${{ matrix.os }}
@@ -28,16 +26,20 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: pSync ${{ github.ref }}
+      - name: Setenv
+        id: env
+        run: |
+          echo ::set-output name=dist::"psync-`basename '${{ github.ref }}'`"
       - name: Preparate
         run: |
-          ln -s src ${{ matrix.dist }}
-          tar chzf ${{ matrix.dist }}.tar.gz ${{ matrix.dist }}
+          ln -s src ${{ steps.env.outputs.dist }}
+          tar chzf ${{ steps.env.outputs.dist }}.tar.gz ${{ steps.env.outputs.dist }}
       - name: Upload
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.release.outputs.upload_url }}
-          asset_path: ${{ matrix.dist }}.tar.gz
-          asset_name: ${{ matrix.dist }}.tar.gz
+          asset_path: ${{ steps.env.outputs.dist }}.tar.gz
+          asset_name: ${{ steps.env.outputs.dist }}.tar.gz
           asset_content_type: application/gzip
