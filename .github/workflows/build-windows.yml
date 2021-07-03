@@ -1,0 +1,40 @@
+# .github/workflows/build-windows.yml
+# Last modified: 04-Jul-2021 (kobayasy)
+
+name: Build-windows
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          install: make gcc
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build and install
+        run: |
+          mkdir build
+          cd build
+          ../src/configure --prefix=$HOME
+          make install distclean
+          cd ..
+          rmdir build
+      - name: Run
+        run: |
+          mkdir ~/pSync
+          echo 'psync pSync' > ~/.psync.conf
+          ~/bin/psync --help
