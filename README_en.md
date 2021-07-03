@@ -1,7 +1,7 @@
 [[Japanese/日本語](README_ja.md)]
 
 [![Build](https://github.com/kobayasy/pSync/workflows/Build/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build.yml)
-[![CodeQL](https://github.com/kobayasy/pSync/workflows/CodeQL/badge.svg)](https://github.com/kobayasy/pSync/security/code-scanning)
+[![CodeQL](https://github.com/kobayasy/pSync/workflows/CodeQL/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
 
 <div align="center"><img src="psync.png" alt="pSync"></div>
 
