@@ -6,7 +6,7 @@
 バックグラウンドで psync を自動実行させる場合、パスワード入力をどうやって自動化させるかが問題になる。
 そんな時は、ssh 用パスワード自動入力コマンドの sshpass で解決できる。
 
-例えば、同期先のホスト名が example.com、ユーザー名が guest で パスワードが password の場合、下記のように実行する。
+例えば、同期先のホスト名が `example.com`、ユーザー名が `guest` で パスワードが `password` の場合、下記のように実行する。
 
 ```
 shpass -p password psync guest@example.com

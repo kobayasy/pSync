@@ -1,4 +1,4 @@
-/* main.c - Last modified: 27-Jun-2021 (kobayasy)
+/* main.c - Last modified: 05-Jul-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -25,6 +25,8 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#else  /* #ifdef HAVE_CONFIG_H */
+#define PACKAGE_STRING "pSync"
 #endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <ctype.h>
@@ -40,9 +42,9 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#ifdef HAVE_FUNCTGETENT
+#ifdef HAVE_TGETENT
 #include <termcap.h>
-#endif  /* #ifdef HAVE_FUNCTGETENT */
+#endif  /* #ifdef HAVE_TGETENT */
 #include "psync_utils.h"
 #include "psync_psp1.h"
 #include "popen3.h"
@@ -240,7 +242,7 @@ error:
     return status;
 }
 
-#ifdef HAVE_FUNCTGETENT
+#ifdef HAVE_TGETENT
 static char *progress_format(int *columns) {
     char *format = NULL;
     char ent[1024];
@@ -270,7 +272,7 @@ static char *progress_format(int *columns) {
 error:
     return format;
 }
-#endif  /* #ifdef HAVE_FUNCTGETENT */
+#endif  /* #ifdef HAVE_TGETENT */
 
 static char *progress_bar(char *buffer, const char *format,
                           const char *text, intmax_t current, intmax_t goal ) {
@@ -741,9 +743,9 @@ int main(int argc, char *argv[]) {
     if (ISERR(status))
         goto run;
     priv.length = status;
-#ifdef HAVE_FUNCTGETENT
+#ifdef HAVE_TGETENT
     priv.format = progress_format(&priv.columns);
-#endif  /* #ifdef HAVE_FUNCTGETENT */
+#endif  /* #ifdef HAVE_TGETENT */
     status = get_opts(argv, &opts);
 run:
     switch (status) {
