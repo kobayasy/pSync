@@ -1,7 +1,7 @@
-# .github/workflows/build-windows.yml
+# .github/workflows/build.yml
 # Last modified: 10-Jul-2021 (kobayasy)
 
-name: Windows
+name: Linux
 
 on:
   push:
@@ -11,15 +11,8 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
+    runs-on: ubuntu-latest
     steps:
-      - name: Setup MSYS2
-        uses: msys2/setup-msys2@v2
-        with:
-          install: make gcc ncurses-devel
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build and install
@@ -32,6 +25,7 @@ jobs:
           rmdir build
       - name: Run
         run: |
-          mkdir ~/pSync
+          mkdir -m700 ~/pSync
           echo 'psync pSync' > ~/.psync.conf
+          chmod 600 ~/.psync.conf
           ~/bin/psync --help

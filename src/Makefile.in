@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 28-Jun-2021 (kobayasy)
+# Makefile.in - Last modified: 10-Jul-2021 (kobayasy)
 #
 # Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -25,8 +25,8 @@
 
 TARGET = @PACKAGE_TARNAME@@EXEEXT@
 OBJS = psync.@OBJEXT@ psync_psp1.@OBJEXT@ popen3.@OBJEXT@ main.@OBJEXT@
-MAN1JA = @PACKAGE_TARNAME@.1
-MAN5JA = @PACKAGE_TARNAME@.conf.5
+MAN1JA = ja/@PACKAGE_TARNAME@.1
+MAN5JA = ja/@PACKAGE_TARNAME@.conf.5
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -36,7 +36,6 @@ mandir = @mandir@
 
 CC = @CC@
 CFLAGS  = @CFLAGS@
-CFLAGS += -I.
 #CFLAGS += -Wall
 #CFLAGS += -Wno-shift-count-overflow
 #CFLAGS += -Wno-string-plus-int

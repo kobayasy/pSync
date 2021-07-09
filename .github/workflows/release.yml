@@ -1,5 +1,5 @@
 # .github/workflows/release.yml
-# Last modified: 01-Jul-2021 (kobayasy)
+# Last modified: 10-Jul-2021 (kobayasy)
 
 name: Release
 
@@ -10,11 +10,8 @@ on:
 
 jobs:
   dist:
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-    runs-on: ${{ matrix.os }}
+    name: Dist
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2

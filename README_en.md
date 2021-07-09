@@ -1,7 +1,8 @@
 [[Japanese/日本語](README_ja.md)]
 
-[![Build](https://github.com/kobayasy/pSync/workflows/Build/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build.yml)
-[![CodeQL](https://github.com/kobayasy/pSync/workflows/CodeQL/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
+[![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml)
+[![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml)
+[![Windows](https://github.com/kobayasy/pSync/workflows/Windows/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-windows.yml)
 
 <div align="center"><img src="psync.png" alt="pSync"></div>
 
@@ -13,9 +14,9 @@ So for this to work, you must be able to login to the sync-host with [OpenSSH].
 This work is required for each sync-host include local-host.  
 1. Do the following to build and install.  
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.8/psync-2.8.tar.gz
-tar xzf psync-2.8.tar.gz
-cd psync-2.8
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.9/psync-2.9.tar.gz
+tar xzf psync-2.9.tar.gz
+cd psync-2.9
 ./configure --prefix=$HOME
 make install
 ```

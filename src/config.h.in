@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+#ifndef _INCLUDE_config_h
+#define _INCLUDE_config_h
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -77,3 +80,5 @@
 
 /* Define for large files, on AIX-style hosts. */
 #undef _LARGE_FILES
+
+#endif  /* #ifndef _INCLUDE_config_h */

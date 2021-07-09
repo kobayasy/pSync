@@ -1,7 +1,7 @@
 # .github/workflows/build.yml
-# Last modified: 29-Jun-2021 (kobayasy)
+# Last modified: 10-Jul-2021 (kobayasy)
 
-name: Build
+name: macOS
 
 on:
   push:
@@ -9,13 +9,9 @@ on:
       - master
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-latest
-    runs-on: ${{ matrix.os }}
+  build:
+    name: Build
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2

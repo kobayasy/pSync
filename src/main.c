@@ -1,4 +1,4 @@
-/* main.c - Last modified: 05-Jul-2021 (kobayasy)
+/* main.c - Last modified: 10-Jul-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -24,7 +24,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include <config.h>
 #else  /* #ifdef HAVE_CONFIG_H */
 #define PACKAGE_STRING "pSync"
 #endif  /* #ifdef HAVE_CONFIG_H */
