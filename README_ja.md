@@ -1,28 +1,32 @@
 [[英語/English](README_en.md)] [[使い方のヒント](NOTE_ja.md)]
 
+---
+
 [![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml)
 [![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml)
 [![Windows](https://github.com/kobayasy/pSync/workflows/Windows/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-windows.yml)
+/
+[![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
 
 <div align="center"><img src="psync.png" alt="pSync"></div>
 
-オープンソースのクラウドストーレージです。  
-[OpenSSH] によって認証/暗号化/圧縮を行い、安全かつ高速にファイル同期を行ないます。  
-よってこれを動かすには、[OpenSSH] で同期先ホストへログイン出来る必要が有ります。  
+オープンソースのクラウドストーレージです。
+[OpenSSH] によって認証/暗号化/圧縮を行い、安全かつ高速にファイル同期を行ないます。
+よってこれを動かすには、[OpenSSH] で同期先ホストへログイン出来る必要が有ります。
 
 ### インストール:
-ローカルホストを含めた全ての同期ホストに対してこの作業が必要です。  
-1. 以下の手順でビルドとインストールを行ないます。  
+ローカルホストを含めた全ての同期ホストに対してこの作業が必要です。
+1. 以下の手順でビルドとインストールを行ないます。
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.9/psync-2.9.tar.gz
-tar xzf psync-2.9.tar.gz
-cd psync-2.9
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.10/psync-2.10.tar.gz
+tar xzf psync-2.10.tar.gz
+cd psync-2.10
 ./configure --prefix=$HOME
 make install
 ```
-2. PATH に ~/bin が含まれていない場合は追加してください。  
-3. 始めて使う場合は以下の手順も必要です。  
-これは `~/pSync` を同期ディレクトリにする例です。  
+2. PATH に ~/bin が含まれていない場合は追加してください。
+3. 始めて使う場合は以下の手順も必要です。
+これは `~/pSync` を同期ディレクトリにする例です。
 ```
 mkdir ~/pSync && chmod 700 ~/pSync
 cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
@@ -32,11 +36,11 @@ psync pSync
 ```
 
 ### 使い方:
-1. 以下の手順で使い方が表示されます。  
+1. 以下の手順で使い方が表示されます。
 ```
 psync --help
 ```
-2. 例えば `guest@example.com` と同期する場合は以下の手順になります。  
+2. 例えば `guest@example.com` と同期する場合は以下の手順になります。
 ```
 psync guest@example.com
 ```

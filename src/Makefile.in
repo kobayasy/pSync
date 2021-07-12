@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 10-Jul-2021 (kobayasy)
+# Makefile.in - Last modified: 12-Jul-2021 (kobayasy)
 #
 # Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -88,10 +88,10 @@ install-man5ja : $(MAN5JA)
 uninstall : uninstall-bin uninstall-man1ja uninstall-man5ja
 
 uninstall-bin :
-	$(RM) $(addprefix $(DESTDIR)$(bindir)/,$(TARGET))
+	$(RM) $(addprefix $(DESTDIR)$(bindir)/,$(notdir $(TARGET)))
 
 uninstall-man1ja :
-	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man1/,$(MAN1JA))
+	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man1/,$(notdir $(MAN1JA)))
 
 uninstall-man5ja :
-	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man5/,$(MAN5JA))
+	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man5/,$(notdir $(MAN5JA)))

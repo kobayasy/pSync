@@ -1,5 +1,5 @@
-# .github/workflows/build.yml
-# Last modified: 10-Jul-2021 (kobayasy)
+# .github/workflows/build-linux.yml
+# Last modified: 12-Jul-2021 (kobayasy)
 
 name: Linux
 

@@ -1,7 +1,7 @@
 # .github/workflows/codeql-analysis.yml
-# Last modified: 29-Jun-2021 (kobayasy)
+# Last modified: 12-Jul-2021 (kobayasy)
 
-name: CodeQL
+name: SAST
 
 on:
   push:
