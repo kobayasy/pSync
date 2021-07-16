@@ -1,6 +1,6 @@
 [[英語/English](README_en.md)] [[使い方のヒント](NOTE_ja.md)]
 
----
+***
 
 [![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml)
 [![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml)
@@ -18,9 +18,9 @@
 ローカルホストを含めた全ての同期ホストに対してこの作業が必要です。
 1. 以下の手順でビルドとインストールを行ないます。
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.10/psync-2.10.tar.gz
-tar xzf psync-2.10.tar.gz
-cd psync-2.10
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.11/psync-2.11.tar.gz
+tar xzf psync-2.11.tar.gz
+cd psync-2.11
 ./configure --prefix=$HOME
 make install
 ```

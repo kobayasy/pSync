@@ -1,6 +1,6 @@
 [[Japanese/日本語](README_ja.md)]
 
----
+***
 
 [![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml)
 [![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml)
@@ -18,9 +18,9 @@ So for this to work, you must be able to login to the sync-host with [OpenSSH].
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.10/psync-2.10.tar.gz
-tar xzf psync-2.10.tar.gz
-cd psync-2.10
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.11/psync-2.11.tar.gz
+tar xzf psync-2.11.tar.gz
+cd psync-2.11
 ./configure --prefix=$HOME
 make install
 ```
