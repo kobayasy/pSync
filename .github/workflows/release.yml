@@ -1,42 +1,42 @@
 # .github/workflows/release.yml
-# Last modified: 10-Jul-2021 (kobayasy)
+# Last modified: 17-Jul-2021 (kobayasy)
 
 name: Release
 
 on:
   push:
     tags:
-      - "[0-9]*"
+    - "[0-9]*"
 
 jobs:
   dist:
     name: Dist
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Release
-        id: release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: pSync ${{ github.ref }}
-      - name: Setenv
-        id: env
-        run: |
-          echo ::set-output name=dist::"psync-`basename '${{ github.ref }}'`"
-      - name: Preparate
-        run: |
-          ln -s src ${{ steps.env.outputs.dist }}
-          tar chzf ${{ steps.env.outputs.dist }}.tar.gz ${{ steps.env.outputs.dist }}
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.release.outputs.upload_url }}
-          asset_path: ${{ steps.env.outputs.dist }}.tar.gz
-          asset_name: ${{ steps.env.outputs.dist }}.tar.gz
-          asset_content_type: application/gzip
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Release
+      id: release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: pSync ${{ github.ref }}
+    - name: Setenv
+      id: env
+      run: |
+        echo ::set-output name=dist::"psync-`basename '${{ github.ref }}'`"
+    - name: Preparate
+      run: |
+        ln -s src ${{ steps.env.outputs.dist }}
+        tar chzf ${{ steps.env.outputs.dist }}.tar.gz ${{ steps.env.outputs.dist }}
+    - name: Upload
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.release.outputs.upload_url }}
+        asset_path: ${{ steps.env.outputs.dist }}.tar.gz
+        asset_name: ${{ steps.env.outputs.dist }}.tar.gz
+        asset_content_type: application/gzip

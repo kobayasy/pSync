@@ -1,12 +1,12 @@
 # .github/workflows/codeql-analysis.yml
-# Last modified: 12-Jul-2021 (kobayasy)
+# Last modified: 17-Jul-2021 (kobayasy)
 
 name: SAST
 
 on:
   push:
     branches:
-      - master
+    - master
 
 jobs:
   analyze:
@@ -20,7 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         language:
-          - cpp
+        - cpp
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
