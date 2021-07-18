@@ -14,7 +14,7 @@
 Securely and speedy synchronize your files by authenticate, encrypt and compress with [OpenSSH].
 So for this to work, you must be able to login to the sync-host with [OpenSSH].
 
-## Installation:
+## Installation
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ```
@@ -35,7 +35,7 @@ psync pSync
 .
 ```
 
-## Uesage:
+## Uesage
 1. Do the following to show usage.
 ```
 psync --help
