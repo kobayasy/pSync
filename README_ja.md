@@ -8,13 +8,13 @@
 /
 [![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
 
-<div align="center"><img src="psync.png" alt="pSync"></div>
+<img src="psync.png" alt="pSync" align="right">
 
-オープンソースのクラウドストーレージです。
+[pSync] はオープンソースのクラウドストーレージです。
 [OpenSSH] によって認証/暗号化/圧縮を行い、安全かつ高速にファイル同期を行ないます。
 よってこれを動かすには、[OpenSSH] で同期先ホストへログイン出来る必要が有ります。
 
-### インストール:
+## インストール:
 ローカルホストを含めた全ての同期ホストに対してこの作業が必要です。
 1. 以下の手順でビルドとインストールを行ないます。
 ```
@@ -35,7 +35,7 @@ psync pSync
 .
 ```
 
-### 使い方:
+## 使い方:
 1. 以下の手順で使い方が表示されます。
 ```
 psync --help
@@ -45,4 +45,5 @@ psync --help
 psync guest@example.com
 ```
 
+[pSync]: https://github.com/kobayasy/pSync
 [OpenSSH]: https://www.openssh.com

@@ -8,13 +8,13 @@
 /
 [![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
 
-<div align="center"><img src="psync.png" alt="pSync"></div>
+<img src="psync.png" alt="pSync" align="right">
 
-This is an open-source cloud storage.
+[pSync] is an open-source cloud storage.
 Securely and speedy synchronize your files by authenticate, encrypt and compress with [OpenSSH].
 So for this to work, you must be able to login to the sync-host with [OpenSSH].
 
-### Installation:
+## Installation:
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ```
@@ -35,7 +35,7 @@ psync pSync
 .
 ```
 
-### Uesage:
+## Uesage:
 1. Do the following to show usage.
 ```
 psync --help
@@ -45,4 +45,5 @@ psync --help
 psync guest@example.com
 ```
 
+[pSync]: https://github.com/kobayasy/pSync
 [OpenSSH]: https://www.openssh.com
