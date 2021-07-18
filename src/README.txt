@@ -6,14 +6,14 @@ Installation:
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ---
-tar xzf psync-2.11.tar.gz
-cd psync-2.11
+tar xzf psync-2.12.tar.gz
+cd psync-2.12
 ./configure --prefix=$HOME
 make install
 ---
 2. Add ~/bin in the PATH if not included.
 3. When using for the 1st time, do the following too.
-For example, if the sync-directory is ~/pSync .
+   For example, if the sync-directory is ~/pSync .
 ---
 mkdir ~/pSync && chmod 700 ~/pSync
 cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
@@ -22,7 +22,7 @@ psync pSync
 .
 ---
 
-Uesage:
+Usage:
 1. Do the following to show usage.
 ---
 psync --help

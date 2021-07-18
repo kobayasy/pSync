@@ -1,3 +1,6 @@
+[[Installation](#installation)]
+[[Usage](#usage)]
+/
 [[Japanese/日本語](README_ja.md)]
 
 ***
@@ -18,9 +21,9 @@ So for this to work, you must be able to login to the sync-host with [OpenSSH].
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.11/psync-2.11.tar.gz
-tar xzf psync-2.11.tar.gz
-cd psync-2.11
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.12/psync-2.12.tar.gz
+tar xzf psync-2.12.tar.gz
+cd psync-2.12
 ./configure --prefix=$HOME
 make install
 ```
@@ -35,7 +38,7 @@ psync pSync
 .
 ```
 
-## Uesage
+## Usage
 1. Do the following to show usage.
 ```
 psync --help

@@ -1,4 +1,8 @@
-[[英語/English](README_en.md)] [[使い方のヒント](NOTE_ja.md)]
+[[インストール](#インストール)]
+[[使い方](#使い方)]
+/
+[[英語/English](README_en.md)]
+[[使い方のヒント](NOTE_ja.md)]
 
 ***
 
@@ -18,9 +22,9 @@
 ローカルホストを含めた全ての同期ホストに対してこの作業が必要です。
 1. 以下の手順でビルドとインストールを行ないます。
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.11/psync-2.11.tar.gz
-tar xzf psync-2.11.tar.gz
-cd psync-2.11
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.12/psync-2.12.tar.gz
+tar xzf psync-2.12.tar.gz
+cd psync-2.12
 ./configure --prefix=$HOME
 make install
 ```
