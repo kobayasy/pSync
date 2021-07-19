@@ -1,7 +1,10 @@
-[[Installation](#installation)]
-[[Usage](#usage)]
+[
+[Installation](#installation)
+|
+[Usage](#usage)
+]
 /
-[[Japanese/日本語](README_ja.md)]
+[Japanese(日本語)](README_ja.md)
 
 ***
 
