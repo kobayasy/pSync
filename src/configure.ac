@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 18-Jul-2021 (kobayasy)
+# configure.ac - Last modified: 31-Jul-2021 (kobayasy)
 #
 # Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 AC_PREREQ(2.69)
-AC_INIT([pSync], [2.12], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
+AC_INIT([pSync], [2.13], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
 
@@ -33,14 +33,10 @@ AC_PROG_INSTALL
 
 AC_SYS_LARGEFILE
 AX_PTHREAD([LIBS="$PTHREAD_LIBS $LIBS" CFLAGS="$CFLAGS $PTHREAD_CFLAGS" CC="$PTHREAD_CC"])
-AC_CHECK_FUNC([clock_gettime],
-    [],
-    [AC_CHECK_LIB([rt], [clock_gettime])] )
-AC_CHECK_HEADERS([termcap.h],
-    [AC_CHECK_FUNC([tgetent],
-        [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the tgetent() function.])],
-        [AC_SEARCH_LIBS([tgetent], [tinfo ncurses],
-            [AC_DEFINE([HAVE_TGETENT], [1])] )] )] )
+AC_CHECK_FUNC([clock_gettime], [], [AC_CHECK_LIB([rt], [clock_gettime])])
+AC_CHECK_HEADERS([termcap.h], [AC_CHECK_FUNC([tgetent],
+    [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the tgetent() function.])],
+    [AC_SEARCH_LIBS([tgetent], [tinfo ncurses], [AC_DEFINE([HAVE_TGETENT], [1])])] )])
 
 AC_CONFIG_HEADERS([config.h])
 AH_TOP([#ifndef _INCLUDE_config_h

@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 01-Jul-2021 (kobayasy)
+/* psync.c - Last modified: 31-Jul-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -172,7 +172,7 @@ static int progress_update(PROGRESS *progress, intmax_t update) {
     struct timespec now;
 
     if (progress->fd != -1) {
-        progress->update = update;
+        progress->update += update;
         if (progress->update != progress->data) {
             if (clock_gettime(CLOCK_REALTIME, &now) == -1)
                 goto error;
@@ -777,7 +777,6 @@ static int make_fsynced_get_func(SETS sets, FLIST *flocal, FLIST *fremote, void 
 
 static int preload(PRIV *priv) {
     int status = INT_MIN;
-    intmax_t uploadsize;
     PROGRESS progress;
     char pathname[PATH_MAX], *name;
     char loadname[PATH_MAX], *p;
@@ -786,7 +785,7 @@ static int preload(PRIV *priv) {
     char buffer[SYMLINK_MAX];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    progress_init(&progress, priv->info, PROGRESS_INTERVAL, "U%+jd\n", uploadsize = 0);
+    progress_init(&progress, priv->info, PROGRESS_INTERVAL, "U%+jd\n", 0);
     name = pathname, name += sprintf(name, "%s/", priv->dirname);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
@@ -820,7 +819,7 @@ static int preload(PRIV *priv) {
         switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE)) {
         case FST_DNLD|FST_RREG:
         case FST_DNLD|FST_RLNK:
-            progress_update(&progress, uploadsize += fsynced->st.size);
+            progress_update(&progress, fsynced->st.size);
             break;
         }
     }
@@ -899,7 +898,6 @@ error:
 
 static int download(PRIV *priv) {
     int status = INT_MIN;
-    intmax_t downloadsize;
     PROGRESS progress;
     char loadname[PATH_MAX], *p;
     unsigned long count;
@@ -911,7 +909,7 @@ static int download(PRIV *priv) {
     struct timeval tv[2];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    progress_init(&progress, priv->info, PROGRESS_INTERVAL, "D%+jd\n", downloadsize = 0);
+    progress_init(&progress, priv->info, PROGRESS_INTERVAL, "D%+jd\n", 0);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
     for (fsynced = priv->fsynced.next; *fsynced->name; fsynced = fsynced->next) {
@@ -940,7 +938,7 @@ static int download(PRIV *priv) {
                         goto error;
                     }
                     size -= n;
-                    progress_update(&progress, downloadsize += n);
+                    progress_update(&progress, n);
                 }
                 close(fd), fd = -1;
                 if (chmod(loadname, fsynced->st.mode & (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
@@ -962,7 +960,7 @@ static int download(PRIV *priv) {
                     status = ERROR_FWRITE;
                     goto error;
                 }
-                progress_update(&progress, downloadsize += size);
+                progress_update(&progress, size);
                 break;
             }
             tv[0].tv_sec = fsynced->st.mtime, tv[0].tv_usec = 0;
