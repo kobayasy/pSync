@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 31-Jul-2021 (kobayasy)
+/* psync.c - Last modified: 08-Aug-2021 (kobayasy)
  *
  * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -147,7 +147,8 @@ typedef struct {
     ((long)((_now).tv_sec  - (_last).tv_sec)  *    1000 + \
            ((_now).tv_nsec - (_last).tv_nsec) / 1000000 )
 
-static int progress_init(PROGRESS *progress, int fd, unsigned long interval, const char *format, intmax_t update) {
+static int progress_init(PROGRESS *progress, intmax_t update,
+                         int fd, unsigned long interval, const char *format ) {
     int status = -1;
     struct timespec now;
 
@@ -785,7 +786,7 @@ static int preload(PRIV *priv) {
     char buffer[SYMLINK_MAX];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    progress_init(&progress, priv->info, PROGRESS_INTERVAL, "U%+jd\n", 0);
+    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, "U%+jd\n");
     name = pathname, name += sprintf(name, "%s/", priv->dirname);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
@@ -909,7 +910,7 @@ static int download(PRIV *priv) {
     struct timeval tv[2];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    progress_init(&progress, priv->info, PROGRESS_INTERVAL, "D%+jd\n", 0);
+    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, "D%+jd\n");
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
     for (fsynced = priv->fsynced.next; *fsynced->name; fsynced = fsynced->next) {
