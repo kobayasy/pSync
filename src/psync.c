@@ -1,6 +1,6 @@
-/* psync.c - Last modified: 08-Aug-2021 (kobayasy)
+/* psync.c - Last modified: 18-Jan-2022 (kobayasy)
  *
- * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -262,23 +262,23 @@ static int write_FLIST(bool synced, FLIST *flist, int fd,
     for (flist = flist->next; *flist->name; flist = flist->next) {
         ONSTOP(stop, -1);
         n = length = strlen(flist->name);
-        WRITE_ONERR(n, fd, -1);
+        WRITE_ONERR(n, fd, write_psync, -1);
         if (write_psync(fd, flist->name, length) != length) {
             status = -1;
             goto error;
         }
         st = flist->st;
-        WRITE_ONERR(st.revision, fd, -1);
-        WRITE_ONERR(st.mtime, fd, -1);
-        WRITE_ONERR(st.mode, fd, -1);
+        WRITE_ONERR(st.revision, fd, write_psync, -1);
+        WRITE_ONERR(st.mtime, fd, write_psync, -1);
+        WRITE_ONERR(st.mode, fd, write_psync, -1);
         if (synced) {
-            WRITE_ONERR(st.size, fd, -1);
+            WRITE_ONERR(st.size, fd, write_psync, -1);
             st.flags = st.flags >> 4 | st.flags << 4;
-            WRITE_ONERR(st.flags, fd, -1);
+            WRITE_ONERR(st.flags, fd, write_psync, -1);
         }
     }
     length = 0;
-    WRITE_ONERR(length, fd, -1);
+    WRITE_ONERR(length, fd, write_psync, -1);
     status = 0;
 error:
     return status;
@@ -295,7 +295,7 @@ static int read_FLIST(bool synced, FLIST *flist, int fd,
         status = -1;
         goto error;
     }
-    READ_ONERR(length, fd, -1);
+    READ_ONERR(length, fd, read_psync, -1);
     while (length > 0) {
         ONSTOP(stop, -1);
         if (length > sizeof(dirname)-1) {
@@ -312,14 +312,14 @@ static int read_FLIST(bool synced, FLIST *flist, int fd,
             status = -1;
             goto error;
         }
-        READ_ONERR(flist->st.revision, fd, -1);
-        READ_ONERR(flist->st.mtime, fd, -1);
-        READ_ONERR(flist->st.mode, fd, -1);
+        READ_ONERR(flist->st.revision, fd, read_psync, -1);
+        READ_ONERR(flist->st.mtime, fd, read_psync, -1);
+        READ_ONERR(flist->st.mode, fd, read_psync, -1);
         if (synced) {
-            READ_ONERR(flist->st.size, fd, -1);
-            READ_ONERR(flist->st.flags, fd, -1);
+            READ_ONERR(flist->st.size, fd, read_psync, -1);
+            READ_ONERR(flist->st.flags, fd, read_psync, -1);
         }
-        READ_ONERR(length, fd, -1);
+        READ_ONERR(length, fd, read_psync, -1);
     }
     status = 0;
 error:
@@ -436,7 +436,7 @@ static int save_fsynced(PRIV *priv) {
         goto error;
     }
     id = PSYNC_FILEID;
-    WRITE_ONERR(id, fd, ERROR_DWRITE);
+    WRITE_ONERR(id, fd, write_psync, ERROR_DWRITE);
     status = write_FLIST(false, &priv->fsynced, fd, priv->stop);
     ONSTOP(priv->stop, ERROR_STOP);
     ONERR(status, ERROR_DWRITE);
@@ -473,7 +473,7 @@ static int load_fsynced(PRIV *priv) {
         status = ERROR_DOPEN;
         goto error;
     }
-    READ(id, fd, n);
+    READ(id, fd, read_psync, n);
     if (!ISERR(n) && id == PSYNC_FILEID) {
         status = read_FLIST(false, &priv->fsynced, fd, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);

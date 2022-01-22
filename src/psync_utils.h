@@ -1,6 +1,6 @@
-/* psync_utils.h - Last modified: 07-Mar-2020 (kobayasy)
+/* psync_utils.h - Last modified: 20-Jan-2022 (kobayasy)
  *
- * Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -49,7 +49,7 @@
         } \
     } while (0)
 
-#define WRITE(_data, _fd, _status) \
+#define WRITE(_data, _fd, _write, _status) \
     do { \
         uint8_t _buffer[1+sizeof(intmax_t)]; \
         size_t _size; \
@@ -70,18 +70,18 @@
             } \
         } \
         *_buffer |= _size++; \
-        if (write_psync((_fd), _buffer, _size) != _size) { \
+        if ((_write)((_fd), _buffer, _size) != _size) { \
             (_status) = INT_MIN; \
             break; \
         } \
         (_status) = 0; \
     } while (0)
-#define READ(_data, _fd, _status) \
+#define READ(_data, _fd, _read, _status) \
     do { \
         uint8_t _buffer[1+sizeof(intmax_t)]; \
         size_t _size; \
     \
-        if (read_psync((_fd), _buffer, 1) != 1) { \
+        if ((_read)((_fd), _buffer, 1) != 1) { \
             (_status) = INT_MIN; \
             break; \
         } \
@@ -96,7 +96,7 @@
         } \
         (_data) = *_buffer & 0x20 ? -1 : 0; \
         if (_size > 0) { \
-            if (read_psync((_fd), _buffer + 1, _size) != _size) { \
+            if ((_read)((_fd), _buffer + 1, _size) != _size) { \
                 (_status) = INT_MIN; \
                 break; \
             } \
@@ -110,21 +110,21 @@
 extern ssize_t write_psync(int fd, const void *buf, size_t count);
 extern ssize_t read_psync(int fd, void *buf, size_t count);
 
-#define WRITE_ONERR(_data, _fd, _error) \
+#define WRITE_ONERR(_data, _fd, _write, _error) \
     do { \
         int _status; \
     \
-        WRITE((_data), (_fd), _status); \
+        WRITE((_data), (_fd), (_write), _status); \
         if (ISERR(_status)) { \
             status = (_error); \
             goto error; \
         } \
     } while (0)
-#define READ_ONERR(_data, _fd, _error) \
+#define READ_ONERR(_data, _fd, _read, _error) \
     do { \
         int _status; \
     \
-        READ((_data), (_fd), _status); \
+        READ((_data), (_fd), (_read), _status); \
         if (ISERR(_status)) { \
             status = (_error); \
             goto error; \

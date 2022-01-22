@@ -1,6 +1,6 @@
-/* main.c - Last modified: 10-Jul-2021 (kobayasy)
+/* main.c - Last modified: 18-Jan-2022 (kobayasy)
  *
- * Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -470,7 +470,7 @@ static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
         .psp = psp,
         .verbose = verbose
     };
-    char *remote_args[] = {"ssh", "-qCp", "22", hostname, "psync --remote", 0};
+    char *remote_args[] = {"ssh", "-qCp", "22", hostname, "psync --remote", NULL};
     char **port = &remote_args[2];
     char *s;
 
