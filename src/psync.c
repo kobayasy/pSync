@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 18-Jan-2022 (kobayasy)
+/* psync.c - Last modified: 05-Feb-2022 (kobayasy)
  *
  * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -35,12 +35,11 @@
 #include <dirent.h>
 #include <fcntl.h>
 #include <libgen.h>
-#include <poll.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include "psync_utils.h"
+#include "common.h"
 #include "psync.h"
 
 #ifndef EXPIRE_DEFAULT
@@ -49,9 +48,6 @@
 #ifndef BACKUP_DEFAULT
 #define BACKUP_DEFAULT   (3*24*60*60)  /* [sec] */
 #endif  /* #ifndef BACKUP_DEFAULT */
-#ifndef POLL_TIMEOUT
-#define POLL_TIMEOUT 100000  /* [msec] */
-#endif  /* #ifndef POLL_TIMEOUT */
 #ifndef LOADBUFFER_SIZE
 #define LOADBUFFER_SIZE (16*1024)  /* [byte] */
 #endif  /* #ifndef LOADBUFFER_SIZE */
@@ -66,74 +62,6 @@
 #undef LOADBUFFER_SIZE
 #define LOADBUFFER_SIZE SYMLINK_MAX
 #endif  /* #if LOADBUFFER_SIZE < SYMLINK_MAX */
-
-ssize_t write_psync(int fd, const void *buf, size_t count) {
-    ssize_t status = -1;
-    size_t size;
-    struct pollfd fds;
-    ssize_t n;
-
-    size = count;
-    fds.fd = fd, fds.events = POLLOUT;
-    while (size > 0) {
-        if (poll(&fds, 1, POLL_TIMEOUT) != 1)
-            goto error;
-        if (!(fds.revents & POLLOUT))
-            goto error;
-        n = write(fd, buf, size);
-        switch (n) {
-        case -1:
-        case  0:  /* end of file */
-            goto error;
-        }
-        size -= n;
-        buf += n;
-    }
-    status = count;
-error:
-    return status;
-}
-
-ssize_t read_psync(int fd, void *buf, size_t count) {
-    ssize_t status = -1;
-    size_t size;
-    struct pollfd fds;
-    ssize_t n;
-
-    size = count;
-    fds.fd = fd, fds.events = POLLIN;
-    while (size > 0) {
-        if (poll(&fds, 1, POLL_TIMEOUT) != 1)
-            goto error;
-        if (!(fds.revents & POLLIN))
-            goto error;
-        n = read(fd, buf, size);
-        switch (n) {
-        case -1:
-        case  0:  /* end of file */
-            goto error;
-        }
-        size -= n;
-        buf += n;
-    }
-    status = count;
-error:
-    return status;
-}
-
-int strcmp_psync(const char *s1, const char *s2) {
-    int n = strcmp(s1, s2);
-
-    if (n < 0) {
-        if (!*s1)
-            n = INT_MAX;
-    }
-    else if (n > 0) {
-        if (!*s2)
-            n = INT_MIN;
-    }
-    return n;
-}
 
 typedef struct {
     int fd;
@@ -262,23 +190,23 @@ static int write_FLIST(bool synced, FLIST *flist, int fd,
     for (flist = flist->next; *flist->name; flist = flist->next) {
         ONSTOP(stop, -1);
         n = length = strlen(flist->name);
-        WRITE_ONERR(n, fd, write_psync, -1);
-        if (write_psync(fd, flist->name, length) != length) {
+        WRITE_ONERR(n, fd, write_size, -1);
+        if (write_size(fd, flist->name, length) != length) {
             status = -1;
             goto error;
         }
         st = flist->st;
-        WRITE_ONERR(st.revision, fd, write_psync, -1);
-        WRITE_ONERR(st.mtime, fd, write_psync, -1);
-        WRITE_ONERR(st.mode, fd, write_psync, -1);
+        WRITE_ONERR(st.revision, fd, write_size, -1);
+        WRITE_ONERR(st.mtime, fd, write_size, -1);
+        WRITE_ONERR(st.mode, fd, write_size, -1);
         if (synced) {
-            WRITE_ONERR(st.size, fd, write_psync, -1);
+            WRITE_ONERR(st.size, fd, write_size, -1);
             st.flags = st.flags >> 4 | st.flags << 4;
-            WRITE_ONERR(st.flags, fd, write_psync, -1);
+            WRITE_ONERR(st.flags, fd, write_size, -1);
         }
     }
     length = 0;
-    WRITE_ONERR(length, fd, write_psync, -1);
+    WRITE_ONERR(length, fd, write_size, -1);
     status = 0;
 error:
     return status;
@@ -295,14 +223,14 @@ static int read_FLIST(bool synced, FLIST *flist, int fd,
         status = -1;
         goto error;
     }
-    READ_ONERR(length, fd, read_psync, -1);
+    READ_ONERR(length, fd, read_size, -1);
     while (length > 0) {
         ONSTOP(stop, -1);
         if (length > sizeof(dirname)-1) {
             status = -1;
             goto error;
         }
-        if (read_psync(fd, dirname, length) != length) {
+        if (read_size(fd, dirname, length) != length) {
             status = -1;
             goto error;
         }
@@ -312,14 +240,14 @@ static int read_FLIST(bool synced, FLIST *flist, int fd,
             status = -1;
             goto error;
         }
-        READ_ONERR(flist->st.revision, fd, read_psync, -1);
-        READ_ONERR(flist->st.mtime, fd, read_psync, -1);
-        READ_ONERR(flist->st.mode, fd, read_psync, -1);
+        READ_ONERR(flist->st.revision, fd, read_size, -1);
+        READ_ONERR(flist->st.mtime, fd, read_size, -1);
+        READ_ONERR(flist->st.mode, fd, read_size, -1);
         if (synced) {
-            READ_ONERR(flist->st.size, fd, read_psync, -1);
-            READ_ONERR(flist->st.flags, fd, read_psync, -1);
+            READ_ONERR(flist->st.size, fd, read_size, -1);
+            READ_ONERR(flist->st.flags, fd, read_size, -1);
         }
-        READ_ONERR(length, fd, read_psync, -1);
+        READ_ONERR(length, fd, read_size, -1);
     }
     status = 0;
 error:
@@ -436,7 +364,7 @@ static int save_fsynced(PRIV *priv) {
         goto error;
     }
     id = PSYNC_FILEID;
-    WRITE_ONERR(id, fd, write_psync, ERROR_DWRITE);
+    WRITE_ONERR(id, fd, write_size, ERROR_DWRITE);
     status = write_FLIST(false, &priv->fsynced, fd, priv->stop);
     ONSTOP(priv->stop, ERROR_STOP);
     ONERR(status, ERROR_DWRITE);
@@ -473,7 +401,7 @@ static int load_fsynced(PRIV *priv) {
         status = ERROR_DOPEN;
         goto error;
     }
-    READ(id, fd, read_psync, n);
+    READ(id, fd, read_size, n);
     if (!ISERR(n) && id == PSYNC_FILEID) {
         status = read_FLIST(false, &priv->fsynced, fd, priv->stop);
         ONSTOP(priv->stop, ERROR_STOP);
@@ -859,12 +787,12 @@ static int upload(PRIV *priv) {
                 }
                 while (size > 0) {
                     ONSTOP(priv->stop, ERROR_STOP);
-                    n = read_psync(fd, buffer, size > sizeof(buffer) ? sizeof(buffer) : size);
+                    n = read_size(fd, buffer, size > sizeof(buffer) ? sizeof(buffer) : size);
                     if (n == -1) {
                         status = ERROR_FREAD;
                         goto error;
                     }
-                    if (write_psync(priv->fdout, buffer, n) != n) {
+                    if (write_size(priv->fdout, buffer, n) != n) {
                         status = ERROR_FUPLD;
                         goto error;
                     }
@@ -877,7 +805,7 @@ static int upload(PRIV *priv) {
                     status = ERROR_FREAD;
                     goto error;
                 }
-                if (write_psync(priv->fdout, buffer, size) != size) {
+                if (write_size(priv->fdout, buffer, size) != size) {
                     status = ERROR_FUPLD;
                     goto error;
                 }
@@ -929,12 +857,12 @@ static int download(PRIV *priv) {
                 }
                 while (size > 0) {
                     ONSTOP(priv->stop, ERROR_STOP);
-                    n = read_psync(priv->fdin, buffer, size > sizeof(buffer) ? sizeof(buffer) : size);
+                    n = read_size(priv->fdin, buffer, size > sizeof(buffer) ? sizeof(buffer) : size);
                     if (n == -1) {
                         status = ERROR_FDNLD;
                         goto error;
                     }
-                    if (write_psync(fd, buffer, n) != n) {
+                    if (write_size(fd, buffer, n) != n) {
                         status = ERROR_FWRITE;
                         goto error;
                     }
@@ -952,7 +880,7 @@ static int download(PRIV *priv) {
                     status = ERROR_SYSTEM;
                     goto error;
                 }
-                if (read_psync(priv->fdin, buffer, size) != size) {
+                if (read_size(priv->fdin, buffer, size) != size) {
                     status = ERROR_FDNLD;
                     goto error;
                 }

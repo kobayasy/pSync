@@ -24,9 +24,9 @@
 ローカルホストを含めた全ての同期ホストに対してこの作業が必要です。
 1. 以下の手順でビルドとインストールを行ないます。
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.15/psync-2.15.tar.gz
-tar xzf psync-2.15.tar.gz
-cd psync-2.15
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.16/psync-2.16.tar.gz
+tar xzf psync-2.16.tar.gz
+cd psync-2.16
 ./configure --prefix=$HOME
 make install
 ```

@@ -1,4 +1,4 @@
-/* psync_psp1.c - Last modified: 18-Jan-2022 (kobayasy)
+/* psync_psp1.c - Last modified: 05-Feb-2022 (kobayasy)
  *
  * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "psync_utils.h"
+#include "common.h"
 #include "psync.h"
 #include "psync_psp1.h"
 
@@ -135,8 +135,8 @@ static int greeting(PRIV *priv) {
     int status = INT_MIN;
     uint32_t id = PSYNC_PROTID;
 
-    WRITE_ONERR(id, priv->fdout, write_psync, -1);
-    READ_ONERR(id, priv->fdin, read_psync, -1);
+    WRITE_ONERR(id, priv->fdout, write_size, -1);
+    READ_ONERR(id, priv->fdin, read_size, -1);
     if (id != PSYNC_PROTID) {
         status = -1;
         goto error;
@@ -153,8 +153,8 @@ static int run(PSYNC_MODE mode, PRIV *priv) {
 
     psync = psync_new(priv->config->dirname, priv->stop);
     ack_local = psync == NULL ? -1 : 0;
-    WRITE_ONERR(ack_local, priv->fdout, write_psync, ERROR_PROTOCOL);
-    READ_ONERR(ack_remote, priv->fdin, read_psync, ERROR_PROTOCOL);
+    WRITE_ONERR(ack_local, priv->fdout, write_size, ERROR_PROTOCOL);
+    READ_ONERR(ack_remote, priv->fdin, read_size, ERROR_PROTOCOL);
     if (!ack_local) {
         if (!ack_remote) {
             psync->expire = psync->t - priv->config->expire * (24*60*60);
@@ -185,12 +185,12 @@ static int run_master(PSYNC_MODE mode, PRIV *priv) {
     for (priv->config = priv->head.next; *priv->config->name; priv->config = priv->config->next) {
         ONSTOP(priv->stop, ERROR_STOP);
         n = length = strlen(priv->config->name);
-        WRITE_ONERR(n, priv->fdout, write_psync, ERROR_PROTOCOL);
-        if (write_psync(priv->fdout, priv->config->name, length) != length) {
+        WRITE_ONERR(n, priv->fdout, write_size, ERROR_PROTOCOL);
+        if (write_size(priv->fdout, priv->config->name, length) != length) {
             status = ERROR_PROTOCOL;
             goto error;
         }
-        READ_ONERR(ack, priv->fdin, read_psync, ERROR_PROTOCOL);
+        READ_ONERR(ack, priv->fdin, read_size, ERROR_PROTOCOL);
         if (!ack) {
             if (priv->info != -1)
                 dprintf(priv->info, "R%s\n", priv->config->name);
@@ -204,7 +204,7 @@ static int run_master(PSYNC_MODE mode, PRIV *priv) {
         }
     }
     length = 0;
-    WRITE_ONERR(length, priv->fdout, write_psync, ERROR_PROTOCOL);
+    WRITE_ONERR(length, priv->fdout, write_size, ERROR_PROTOCOL);
     status = 0;
 error:
     if (priv->info != -1 && status)
@@ -221,7 +221,7 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
 
     ONSTOP(priv->stop, ERROR_STOP);
     ONERR(greeting(priv), ERROR_PROTOCOL);
-    READ_ONERR(length, priv->fdin, read_psync, ERROR_PROTOCOL);
+    READ_ONERR(length, priv->fdin, read_size, ERROR_PROTOCOL);
     while (length > 0) {
         ONSTOP(priv->stop, ERROR_STOP);
         name = malloc(length + 1);
@@ -229,7 +229,7 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
             status = ERROR_MEMORY;
             goto error;
         }
-        if (read_psync(priv->fdin, name, length) != length) {
+        if (read_size(priv->fdin, name, length) != length) {
             status = ERROR_PROTOCOL;
             goto error;
         }
@@ -237,7 +237,7 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
         LIST_SEEK_NEXT(priv->config, name, seek);
         free(name), name = NULL;
         ack = seek ? -1 : 0;
-        WRITE_ONERR(ack, priv->fdout, write_psync, ERROR_PROTOCOL);
+        WRITE_ONERR(ack, priv->fdout, write_size, ERROR_PROTOCOL);
         if (!ack) {
             if (priv->info != -1)
                 dprintf(priv->info, "R%s\n", priv->config->name);
@@ -249,7 +249,7 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
                 dprintf(priv->info, "R\n");
             }
         }
-        READ_ONERR(length, priv->fdin, read_psync, ERROR_PROTOCOL);
+        READ_ONERR(length, priv->fdin, read_size, ERROR_PROTOCOL);
     }
     status = 0;
 error:

@@ -1,4 +1,4 @@
-/* psync_utils.h - Last modified: 20-Jan-2022 (kobayasy)
+/* common.h - Last modified: 05-Feb-2022 (kobayasy)
  *
  * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -23,8 +23,8 @@
  * SOFTWARE.
  */
 
-#ifndef _INCLUDE_psync_utils_h
-#define _INCLUDE_psync_utils_h
+#ifndef _INCLUDE_common_h
+#define _INCLUDE_common_h
 
 #include <limits.h>
 #include <signal.h>
@@ -107,8 +107,8 @@
         } \
         (_status) = 0; \
     } while (0)
-extern ssize_t write_psync(int fd, const void *buf, size_t count);
-extern ssize_t read_psync(int fd, void *buf, size_t count);
+extern ssize_t write_size(int fd, const void *buf, size_t count);
+extern ssize_t read_size(int fd, void *buf, size_t count);
 
 #define WRITE_ONERR(_data, _fd, _write, _error) \
     do { \
@@ -152,7 +152,7 @@ extern ssize_t read_psync(int fd, void *buf, size_t count);
     } while (0)
 #define LIST_SEEK_NEXT(_p, _name, _seek) \
     do { \
-        while (strcmp_psync((_p)->next->name, (_name)) <= 0) \
+        while (strcmp_next((_p)->next->name, (_name)) <= 0) \
             (_p) = (_p)->next; \
         while (((_seek) = strcmp((_p)->name, (_name))) > 0) \
             (_p) = (_p)->prev; \
@@ -161,10 +161,10 @@ extern ssize_t read_psync(int fd, void *buf, size_t count);
     do { \
         while (strcmp((_p)->prev->name, (_name)) >= 0) \
             (_p) = (_p)->prev; \
-        while (((_seek) = strcmp_psync((_p)->name, (_name))) < 0) \
+        while (((_seek) = strcmp_next((_p)->name, (_name))) < 0) \
             (_p) = (_p)->next; \
     } while (0)
-extern int strcmp_psync(const char *s1, const char *s2);
+extern int strcmp_next(const char *s1, const char *s2);
 
 typedef enum {
     SETS_1AND2,
@@ -235,7 +235,7 @@ int sets_next_##_LIST(_LIST *list1, _LIST *list2, \
     p1 = p1->next, p2 = p2->next; \
     while (*p1->name || *p2->name) { \
         ONSTOP(stop, -1); \
-        n = strcmp_psync(p1->name, p2->name); \
+        n = strcmp_next(p1->name, p2->name); \
         if (n < 0) { \
             next1 = p1->next; \
             status = func(SETS_1NOT2, p1, p2, data); \
@@ -306,4 +306,4 @@ error: \
     return status; \
 }
 
-#endif  /* #ifndef _INCLUDE_psync_utils_h */
+#endif  /* #ifndef _INCLUDE_common_h */

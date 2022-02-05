@@ -1,4 +1,4 @@
-/* main.c - Last modified: 18-Jan-2022 (kobayasy)
+/* main.c - Last modified: 05-Feb-2022 (kobayasy)
  *
  * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -45,7 +45,7 @@
 #ifdef HAVE_TGETENT
 #include <termcap.h>
 #endif  /* #ifdef HAVE_TGETENT */
-#include "psync_utils.h"
+#include "common.h"
 #include "psync_psp1.h"
 #include "popen3.h"
 
