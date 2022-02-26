@@ -5,7 +5,7 @@
 [ファイル更新があった時に psync を自動実](#ファイル更新があった時に-psync-を自動実行)
 ]
 *|*
-[README](README_ja.md)
+[README](../README_ja.md)
 
 ***
 
