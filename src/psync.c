@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 05-Feb-2022 (kobayasy)
+/* psync.c - Last modified: 16-Mar-2022 (kobayasy)
  *
  * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -40,6 +40,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include "common.h"
+#include "progress.h"
 #include "psync.h"
 
 #ifndef EXPIRE_DEFAULT
@@ -62,71 +63,6 @@
 #undef LOADBUFFER_SIZE
 #define LOADBUFFER_SIZE SYMLINK_MAX
 #endif  /* #if LOADBUFFER_SIZE < SYMLINK_MAX */
-
-typedef struct {
-    int fd;
-    unsigned long interval;
-    const char *format;
-    intmax_t update, data;
-    struct timespec last;
-} PROGRESS;
-
-#define DIFFTS(_now, _last) \
-    ((long)((_now).tv_sec  - (_last).tv_sec)  *    1000 + \
-           ((_now).tv_nsec - (_last).tv_nsec) / 1000000 )
-
-static int progress_init(PROGRESS *progress, intmax_t update,
-                         int fd, unsigned long interval, const char *format ) {
-    int status = -1;
-    struct timespec now;
-
-    progress->fd = fd;
-    if (progress->fd != -1) {
-        progress->interval = interval;
-        progress->format = format;
-        progress->update = update;
-        if (clock_gettime(CLOCK_REALTIME, &now) == -1) {
-            progress->fd = -1;
-            goto error;
-        }
-        progress->data = progress->update, progress->last = now;
-    }
-    status = 0;
-error:
-    return status;
-}
-
-static int progress_update(PROGRESS *progress, intmax_t update) {
-    int status = -1;
-    struct timespec now;
-
-    if (progress->fd != -1) {
-        progress->update += update;
-        if (progress->update != progress->data) {
-            if (clock_gettime(CLOCK_REALTIME, &now) == -1)
-                goto error;
-            if (DIFFTS(now, progress->last) >= progress->interval) {
-                dprintf(progress->fd, progress->format, progress->update);
-                progress->data = progress->update, progress->last = now;
-            }
-        }
-    }
-    status = 0;
-error:
-    return status;
-}
-
-static int progress_term(PROGRESS *progress) {
-    int status = -1;
-
-    if (progress->fd != -1) {
-        if (progress->update != progress->data)
-            dprintf(progress->fd, progress->format, progress->update);
-        progress->fd = -1;
-    }
-    status = 0;
-    return status;
-}
 
 #define FST_UPLD  0x08
 #define FST_DNLD  0x80
@@ -1008,7 +944,7 @@ error:
     return status;
 }
 
-static int make_log(PRIV *priv) {
+static int logging(PRIV *priv) {
     int status = INT_MIN;
     char pathname[PATH_MAX];
     FILE *fp = NULL;
@@ -1300,7 +1236,7 @@ static int run(int (*func)(SETS sets, FLIST *f1, FLIST *f2, void *data), PRIV *p
     ONERR(upload_param.status, upload_param.status);
     if (ISERR(status = commit(priv)))
         goto error;
-    if (ISERR(status = make_log(priv)))
+    if (ISERR(status = logging(priv)))
         goto error;
     if (ISERR(status = clean(priv)))
         goto error;

@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 05-Feb-2022 (kobayasy)
+# Makefile.in - Last modified: 19-Mar-2022 (kobayasy)
 #
 # Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 TARGET = @PACKAGE_TARNAME@@EXEEXT@
-OBJS = psync.@OBJEXT@ common.@OBJEXT@ psync_psp1.@OBJEXT@ popen3.@OBJEXT@ main.@OBJEXT@
+OBJS = psync.@OBJEXT@ common.@OBJEXT@ progress.@OBJEXT@ psync_psp1.@OBJEXT@ popen3.@OBJEXT@ main.@OBJEXT@
 MAN1JA = ja/@PACKAGE_TARNAME@.1
 MAN5JA = ja/@PACKAGE_TARNAME@.conf.5
 
@@ -55,8 +55,9 @@ all : $(TARGET)
 $(TARGET) : $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-psync.@OBJEXT@ : psync.c common.h psync.h
+psync.@OBJEXT@ : psync.c common.h progress.h psync.h
 common.@OBJEXT@ : common.c common.h
+progress.@OBJEXT@ : progress.c progress.h
 psync_psp1.@OBJEXT@ : psync_psp1.c common.h psync.h psync_psp1.h
 popen3.@OBJEXT@ : popen3.c popen3.h
 main.@OBJEXT@ : main.c common.h psync_psp1.h psync.h popen3.h config.h

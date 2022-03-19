@@ -1,4 +1,4 @@
-/* common.h - Last modified: 05-Feb-2022 (kobayasy)
+/* common.h - Last modified: 17-Mar-2022 (kobayasy)
  *
  * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -69,12 +69,12 @@
                 (_data) >>= 8; \
             } \
         } \
+        (_status) = _size; \
         *_buffer |= _size++; \
         if ((_write)((_fd), _buffer, _size) != _size) { \
             (_status) = INT_MIN; \
             break; \
         } \
-        (_status) = 0; \
     } while (0)
 #define READ(_data, _fd, _read, _status) \
     do { \
@@ -86,18 +86,20 @@
             break; \
         } \
         if ((*_buffer & 0xc0) != 0x80) { \
-            (_status) = INT_MIN; \
-            break; \
-        } \
-        _size = *_buffer & 0x1f; \
-        if (_size > sizeof(_data)) { \
-            (_status) = INT_MIN; \
+            (_data) = *_buffer; \
+            (_status) = -1; \
             break; \
         } \
         (_data) = *_buffer & 0x20 ? -1 : 0; \
+        _size = *_buffer & 0x1f; \
+        (_status) = _size; \
         if (_size > 0) { \
             if ((_read)((_fd), _buffer + 1, _size) != _size) { \
                 (_status) = INT_MIN; \
+                break; \
+            } \
+            if (_size > sizeof(_data)) { \
+                (_status) = -2; \
                 break; \
             } \
             do { \
@@ -105,7 +107,6 @@
                 (_data) |= _buffer[_size--]; \
             } while (_size > 0); \
         } \
-        (_status) = 0; \
     } while (0)
 extern ssize_t write_size(int fd, const void *buf, size_t count);
 extern ssize_t read_size(int fd, void *buf, size_t count);
