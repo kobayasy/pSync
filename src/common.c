@@ -1,4 +1,4 @@
-/* common.c - Last modified: 05-Feb-2022 (kobayasy)
+/* common.c - Last modified: 29-Apr-2022 (kobayasy)
  *
  * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -30,7 +30,7 @@
 #include "common.h"
 
 #ifndef POLL_TIMEOUT
-#define POLL_TIMEOUT 100000  /* [msec] */
+#define POLL_TIMEOUT -1  /* [msec] */
 #endif  /* #ifndef POLL_TIMEOUT */
 
 ssize_t write_size(int fd, const void *buf, size_t count) {
