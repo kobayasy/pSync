@@ -6,8 +6,8 @@ Installation:
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ---
-tar xzf psync-2.18.tar.gz
-cd psync-2.18
+tar xzf psync-2.19.tar.gz
+cd psync-2.19
 ./configure --prefix=$HOME
 make install
 ---

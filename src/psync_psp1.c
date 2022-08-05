@@ -1,4 +1,4 @@
-/* psync_psp1.c - Last modified: 05-Feb-2022 (kobayasy)
+/* psync_psp1.c - Last modified: 20-May-2022 (kobayasy)
  *
  * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -46,6 +46,7 @@ typedef struct s_clist {
     char *dirname;
     time_t expire;
     time_t backup;
+    void *data;
     char name[1];
 } CLIST;
 
@@ -54,6 +55,7 @@ static CLIST *new_CLIST(CLIST *clist) {
     clist->dirname = clist->name;
     clist->expire = 0;
     clist->backup = 0;
+    clist->data = NULL;
     return clist;
 }
 
@@ -71,6 +73,7 @@ static CLIST *add_CLIST(CLIST *clist, const char *name, const char *dirname) {
     cnew->dirname = strcpy(cnew->name + length, dirname);
     cnew->expire = 0;
     cnew->backup = 0;
+    cnew->data = NULL;
     LIST_INSERT_NEXT(cnew, clist);
 error:
     return cnew;
@@ -82,6 +85,8 @@ static int delete_func(CLIST *c, void *data) {
     int status = INT_MIN;
 
     LIST_DELETE(c);
+    if (c->data != NULL)
+        free(c->data);
     free(c);
     status = 0;
     return status;
@@ -112,6 +117,8 @@ error:
 
 static void free_priv(PRIV *priv) {
     each_next_CLIST(&priv->head, delete_func, NULL, NULL);
+    if (priv->head.data != NULL)
+        free(priv->head.data);
     free(priv);
 }
 
@@ -127,6 +134,18 @@ static CLIST *add_config(const char *name, const char *dirname, PRIV *priv) {
         goto error;
     config->expire = priv->head.expire;
     config->backup = priv->head.backup;
+error:
+    return config;
+}
+
+static CLIST *seek_config(const char *name, PRIV *priv) {
+    CLIST *config = NULL;
+    int seek;
+
+    LIST_SEEK_NEXT(priv->config, name, seek);
+    if (seek)
+        goto error;
+    config = priv->config;
 error:
     return config;
 }
@@ -271,7 +290,7 @@ void psp_free(PSP *psp) {
 PSP_CONFIG *psp_config(const char *name, const char *dirname, PSP *psp) {
     CLIST *config;
 
-    config = add_config(name, dirname, (PRIV *)psp);
+    config = dirname == NULL ? seek_config(name, (PRIV *)psp) : add_config(name, dirname, (PRIV *)psp);
     return config != NULL ? (PSP_CONFIG *)&config->dirname : NULL;
 }
 
