@@ -1,5 +1,5 @@
 # .github/workflows/build-windows.yml
-# Last modified: 17-Jul-2021 (kobayasy)
+# Last modified: 21-Jan-2023 (kobayasy)
 
 name: Windows
 
@@ -21,7 +21,7 @@ jobs:
       with:
         install: make gcc ncurses-devel
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Build and install
       run: |
         mkdir build
