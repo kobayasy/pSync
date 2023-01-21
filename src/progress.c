@@ -1,6 +1,6 @@
-/* progress.c - Last modified: 16-Mar-2022 (kobayasy)
+/* progress.c - Last modified: 21-Jan-2023 (kobayasy)
  *
- * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -33,14 +33,14 @@
            ((_now).tv_nsec - (_last).tv_nsec) / 1000000 )
 
 int progress_init(PROGRESS *progress, intmax_t update,
-                  int fd, unsigned long interval, const char *format ) {
+                  int fd, unsigned long interval, char id ) {
     int status = -1;
     struct timespec now;
 
     progress->fd = fd;
     if (progress->fd != -1) {
         progress->interval = interval;
-        progress->format = format;
+        sprintf(progress->format, "%c%%+jd\n", id);
         progress->update = update;
         if (clock_gettime(CLOCK_REALTIME, &now) == -1) {
             progress->fd = -1;

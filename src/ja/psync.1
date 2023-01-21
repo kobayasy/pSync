@@ -1,6 +1,6 @@
-./" psync.1 - Last modified: 28-Jun-2021 (kobayasy)
+./" psync.1 - Last modified: 21-Jan-2023 (kobayasy)
 ./"
-./" Copyright (c) 2018-2021 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+./" Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 ./"
 ./" Permission is hereby granted, free of charge, to any person
 ./" obtaining a copy of this software and associated documentation files
@@ -22,7 +22,7 @@
 ./" CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ./" SOFTWARE.
 ./"
-.Dd June 28, 2021
+.Dd January 21, 2023
 .Dt PSYNC 1
 .Os POSIX
 .Sh NAME
@@ -90,7 +90,9 @@ pSync は同期相手側としてリモートで起動される場合も含め�
 もし、重複するような場合は後から同期を始めようとした側の
 進捗情報
 に
-.Dl Do Skip, not ready. Dc
+.Dl Local not ready
+もしくは
+.Dl Remote not ready
 を表示してそのディレクトリに対する同期処理を飛ばす。
 同期処理の完了を待つ事はしないので、必要に応じて同期完了を待ってから再度実行をする。
 .Sh OPTIONS
@@ -126,32 +128,47 @@ pSync は同期相手側としてリモートで起動される場合も含め�
 .El
 .Ss 進捗情報
 .Fl Fl verbose Ns Po Fl v Pc
-で進捗情報表示を有効にすると、以下の5種類の情報がリアルタイムに表示される。
+で進捗情報表示を有効にすると、以下の6種類の情報がリアルタイムに表示される。
 .Bl -tag -width Ds
 .It Ar 認識名
-行の左端から始まる文字列は、現在同期処理中の同期ディレクトリを示す識別名。
+行の左端から始まる文字列は、同期処理中の同期ディレクトリを示す識別名。
 識別名に付いては
 .Xr psync.conf 5
 を参照。
-.It Bq Li D Va ダウンロードしたバイト数 Li / Va ダウンロードするバイト数
-.Dq Bo Li D
-と
-.Dq Bc
-で囲われた表示はダウンロードの進捗状況。
-.Dq Li /
-の左側は既にダウンロードが済んでいるバイト数を、右側はダウンロードする総バイト数をそれぞれ示す。
-.It Bq Li U Va アップロードしたバイト数 Li / Va アップロードするバイト数
-.Dq Bo Li U
-と
-.Dq Bc
-で囲われた表示はアップロードの進捗状況。
-.Dq Li /
-の左側は既にアップロードが済んでいるバイト数を、右側はアップロードする総バイト数をそれぞれ示す。
-.It Li L: Va 同期元のエラーメッセージ
-.Dq Li L:
+.It Bq \& Va 同期ファイル数 \&
+.Bq \& と \&
+で囲われた中に1つだけ数字が入る表示は、同期対象ファイルの検索中を示す。
+.Va 同期ファイル数
+は同期元と相手の合計を示す。
+この数にはディレクトリは含まれない。
+.It Bq \& Va ダウンロードバイト数 Li / Va アップロードバイト数 \&
+.Bq \& と \&
+で囲われた中に
+.Li /
+で区切って2つの数字が入る表示は、同期ファイルの転送中を示す。
+.Va ダウンロードバイト数
+は既にダウンロードが済んでいるバイト数の同期元と相手の合計を示す。
+.Va アップロードバイト数
+はアップロードする総合計のバイト数の同期元と相手の合計を示す。
+.It Bq \& Li - Ns Va 削除ファイル数 Li : + Ns Va コピーファイル数 \&
+.Bq \& と \&
+で囲われた中に
+.Li :
+で区切って、左側に
+.Li +
+から始まる数字、右側に
+.Li -
+から始まる数字が入る表示は、ファイルの更新中を示す。
+.Va 削除ファイル数
+は削除したファイル数の同期元と相手の合計を示す。
+.Va コピーファイル数
+はコピーしたファイル数の同期元と相手の合計を示す。
+これらの数にはディレクトリは含まれない。
+.It Li Local: Va 同期元のエラーメッセージ
+.Li Local:
 から始まる表示は同期元のエラーメッセージ。
-.It Li R: Va 同期相手のエラーメッセージ
-.Dq Li R:
+.It Li Remote: Va 同期相手のエラーメッセージ
+.Li Remote:
 から始まる表示は同期相手のエラーメッセージ。
 .El
 .Sh ENVIRONMENT
@@ -188,24 +205,24 @@ pSync により自動生成される。
 .It Va 同期ディレクトリ Ns Pa /.psync/ Ns Va ファイル同期日時 Ns Pa /log
 同期ログのテキストファイル。
 先頭の行は同期により削除と追加、更新、アップロードされた、それぞれのファイル数を示し、それ以降の
-.Sq Li D
+.Li D
 で始まる行は同期により削除されたファイル名、
-.Sq Li A
+.Li A
 は追加されたファイル名、
-.Sq Li M
+.Li M
 は更新されたファイル名、
-.Sq Li U
+.Li U
 は同期相手へアップロードしたファイル名を示している。
 ファイル名最後の
-.Sq Li /
+.Li /
 はファイルの種類がディレクトリ、
-.Sq Li @
+.Li @
 はシンボリックリンク、
-.Sq Li %
+.Li %
 は削除されたファイルである事を示しており、通常ファイルには何も付かない。
 追加ファイルと更新ファイルは同期後の種類、削除ファイルは同期前の種類を示す。
 さらに、削除か更新された通常ファイルの場合は
-.Dq Li ->
+.Li ->
 に続けてバックアップファイル名も示される。
 .It Va 同期ディレクトリ Ns Pa /.psync/lock/
 同期ディレクトリの排他制御用ロックファイル。
@@ -225,91 +242,91 @@ pSync により自動生成される。
 以外を返す。
 .Pp
 .Bl -tag -width Ds
-.It Er 0 Ns , Do \&No error Dc
+.It Er 0 Ns , \&No error
 ファイル同期成功(エラーなし)。
-.It Er 1 Ns , Do Unknown Dc
+.It Er 1 Ns , Unknown
 不明なエラー。
-.It Er 2 Ns , Do File type Dc
+.It Er 2 Ns , File type
 非対応な種類のファイルが同期ディレクトリ内に存在する。
 pSync が対応しているファイルは通常ファイルとディレクトリ、シンボリックリンクの3種類のみ。
 下記コマンドで非対応なファイルの検出が出来る。
 .Dl find Ar 同期ディレクトリ Li ! -type f \&! -type d \&! -type l
 他の同期ディレクトリを同期ディレクトリ内に含める事も出来ない。
 ハードリンクはそれぞれ個別の通常ファイルとして扱われる。
-.It Er 3 Ns , Do File permission Dc
+.It Er 3 Ns , File permission
 .Ar USER
 の権限でアクセスできないファイルが同期ディレクトリ内に存在する。
 このエラー原因のファイルは下記コマンドで検出出来る。
 .Dl find Ar 同期ディレクトリ Li -type f \&! -readable -o -type d \&! \e( -readable -writable -executable \e)
-.It Er 4 Ns , Do Make file Dc
+.It Er 4 Ns , Make file
 同期ファイルの生成に失敗した。
 ディスク容量が足りなくなった場合もこのエラーになる。
-.It Er 5 Ns , Do Open file Dc
+.It Er 5 Ns , Open file
 同期ファイルのオープンに失敗した。
-.It Er 6 Ns , Do Write file Dc
+.It Er 6 Ns , Write file
 同期ファイルの書き込みに失敗した。
 ディスク容量が足りなくなった場合もこのエラーになる。
-.It Er 7 Ns , Do Read file Dc
+.It Er 7 Ns , Read file
 同期ファイルの読み出しに失敗した。
-.It Er 8 Ns , Do Link file Dc
+.It Er 8 Ns , Link file
 同期ファイルのシンボリックリンク生成に失敗した。
 ディスク容量が足りなくなった場合もこのエラーになる。
-.It Er 9 Ns , Do Remove file Dc
+.It Er 9 Ns , Remove file
 同期ファイルの削除に失敗した。
-.It Er 10 Ns , Do Move file Dc
+.It Er 10 Ns , Move file
 同期ファイルの移動に失敗した。
-.It Er 11 Ns , Do Write file-stat Dc
+.It Er 11 Ns , Write file-stat
 同期ファイルの情報読み出しに失敗した。
-.It Er 12 Ns , Do Read file-stat Dc
+.It Er 12 Ns , Read file-stat
 同期ファイルの情報書き込みに失敗した。
-.It Er 13 Ns , Do Upload file-stat Dc
+.It Er 13 Ns , Upload file-stat
 ファイル情報のアップロードに失敗した。
 途中で同期先との接続が切れた場合もこのエラーになる。
-.It Er 14 Ns , Do Download file-stat Dc
+.It Er 14 Ns , Download file-stat
 ファイル情報のダウンロードに失敗した。
 途中で同期先との接続が切れた場合もこのエラーになる。
-.It Er 15 Ns , Do Upload file Dc
+.It Er 15 Ns , Upload file
 ファイルのアップロードに失敗した。
 途中で同期先との接続が切れた場合もこのエラーになる。
-.It Er 16 Ns , Do Download file Dc
+.It Er 16 Ns , Download file
 ファイルのダウンロードに失敗した。
 途中で同期先との接続が切れた場合もこのエラーになる。
-.It Er 17 Ns , Do Make data-file Dc
+.It Er 17 Ns , Make data-file
 同期情報保存ファイルの生成に失敗した。
 ディスク容量が足りなくなった場合もこのエラーになる。
-.It Er 18 Ns , Do Open data-file Dc
+.It Er 18 Ns , Open data-file
 同期情報保存ファイルのオープンに失敗した。
-.It Er 19 Ns , Do Write data-file Dc
+.It Er 19 Ns , Write data-file
 同期情報保存ファイルの書き込みに失敗した。
 ディスク容量が足りなくなった場合もこのエラーになる。
-.It Er 20 Ns , Do Read data-file Dc
+.It Er 20 Ns , Read data-file
 同期情報保存ファイルの読み出しに失敗した。
-.It Er 21 Ns , Do Remove data-file Dc
+.It Er 21 Ns , Remove data-file
 同期情報保存ファイルの削除に失敗した。
-.It Er 22 Ns , Do Memory Dc
+.It Er 22 Ns , Memory
 作業バッファの確保に失敗した。
 メモリ不足の場合はこのエラーになる。
-.It Er 23 Ns , Do System Dc
+.It Er 23 Ns , System
 その他の問題により同期処理を中断した。
-.It Er 24 Ns , Do Interrupted Dc
+.It Er 24 Ns , Interrupted
 シグナルの SIGHUP か SIGINT、SIGTERM、SIGPIPE のいずれかを受けて処理を中断した。
-.It Er 25 Ns , Do Protocol Dc
+.It Er 25 Ns , Protocol
 同期相手との接続に失敗したかプロトコルが合わない。
 .Ar USER Ns @ Ns Ar HOST
 で指定した同期相手のホスト名かログイン名に間違いがあった場合もこのエラーになる。
 同期相手に pSync が正しくインストールされていない事も考えられる。
-.It Er 26 Ns , Do Environment Dc
+.It Er 26 Ns , Environment
 環境変数に問題が有る。
 .Ev HOME
 が正しく設定されてい無い場合はこのエラーになる。
-.It Er 27 Ns , Do Configuration Dc
+.It Er 27 Ns , Configuration
 設定ファイルに問題が有る。
 .Pa ~/.psync.conf
 が存在しないか存在してもその内容に問題がある場合にこのエラーになる。
 設定ファイルに付いては、
 .Xr psync.conf 5
 で説明しているのでそちらを参照。
-.It Er 28 Ns , Do Argument Dc
+.It Er 28 Ns , Argument
 引数に問題が有る。
 間違った引数を与えた場合はこのエラーになる。
 .It Er 255
@@ -326,8 +343,8 @@ pSync、MSync 共に
 .An Yuichi\ Kobayashi
 が設計と実装を行った。
 .Pp
-バグレポートは Subject に
-.Dq pSync
-を入れて
+バグレポートは Subject: に文字列
+.Li pSync
+を含めて
 .Mt kobayasy@kobayasy.com
 まで。

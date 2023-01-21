@@ -1,6 +1,6 @@
-/* psync_psp1.h - Last modified: 20-May-2022 (kobayasy)
+/* psync_psp1.h - Last modified: 21-Jan-2023 (kobayasy)
  *
- * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -45,7 +45,6 @@ typedef struct {
     const char *dirname;
     time_t expire;
     time_t backup;
-    void *data;
     const char name[1];
 } PSP_CONFIG;
 

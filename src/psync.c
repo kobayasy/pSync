@@ -1,6 +1,6 @@
-/* psync.c - Last modified: 16-Mar-2022 (kobayasy)
+/* psync.c - Last modified: 21-Jan-2023 (kobayasy)
  *
- * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -52,9 +52,11 @@
 #ifndef LOADBUFFER_SIZE
 #define LOADBUFFER_SIZE (16*1024)  /* [byte] */
 #endif  /* #ifndef LOADBUFFER_SIZE */
+#ifdef _INCLUDE_progress_h
 #ifndef PROGRESS_INTERVAL
 #define PROGRESS_INTERVAL 1000  /* [msec] */
 #endif  /* #ifndef PROGRESS_INTERVAL */
+#endif  /* #ifdef _INCLUDE_progress_h */
 
 #ifndef SYMLINK_MAX
 #define SYMLINK_MAX PATH_MAX
@@ -352,7 +354,7 @@ error:
     return status;
 }
 
-static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *name,
+static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *name, PROGRESS *progress,
                         volatile sig_atomic_t *stop ) {
     int status = INT_MIN;
     struct stat st;
@@ -427,13 +429,19 @@ static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *nam
                 !strcmp(ent->d_name, "..") )
                 continue;
             strcpy(p, ent->d_name);
-            if (ISERR(status = get_flocal_r(flocal, flast, pathname, name, stop)))
+            if (ISERR(status = get_flocal_r(flocal, flast, pathname, name, progress, stop)))
                 goto error;
             if ((*flocal)->st.revision > fdir->st.revision)
                 fdir->st.revision = (*flocal)->st.revision;
         }
         closedir(dir), dir = NULL;
         break;
+#ifdef _INCLUDE_progress_h
+    case FST_LREG:
+    case FST_LLNK:
+        progress_update(progress, 1);
+        break;
+#endif  /* #ifdef _INCLUDE_progress_h */
     }
     status = 0;
 error:
@@ -443,6 +451,9 @@ error:
 }
 static int get_flocal(PRIV *priv) {
     int status = INT_MIN;
+#ifdef _INCLUDE_progress_h
+    PROGRESS progress;
+#endif  /* #ifdef _INCLUDE_progress_h */
     struct stat st;
     DIR *dir = NULL;
     char pathname[PATH_MAX], *name;
@@ -450,6 +461,9 @@ static int get_flocal(PRIV *priv) {
     struct dirent *ent;
 
     ONSTOP(priv->stop, ERROR_STOP);
+#ifdef _INCLUDE_progress_h
+    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'S');
+#endif  /* #ifdef _INCLUDE_progress_h */
     if (stat(priv->dirname, &st) == -1) {
         status = ERROR_SREAD;
         goto error;
@@ -479,7 +493,7 @@ static int get_flocal(PRIV *priv) {
             !strcmp(ent->d_name, SYNCDIR) )
             continue;
         strcpy(name, ent->d_name);
-        if (ISERR(status = get_flocal_r(&flocal, &flast, pathname, name, priv->stop))) {
+        if (ISERR(status = get_flocal_r(&flocal, &flast, pathname, name, &progress, priv->stop))) {
             if (priv->info != -1)
                 switch (status) {
                 case ERROR_FTYPE:
@@ -491,6 +505,9 @@ static int get_flocal(PRIV *priv) {
         }
     }
     closedir(dir), dir = NULL;
+#ifdef _INCLUDE_progress_h
+    progress_term(&progress);
+#endif  /* #ifdef _INCLUDE_progress_h */
     status = 0;
 error:
     if (dir != NULL)
@@ -642,7 +659,9 @@ static int make_fsynced_get_func(SETS sets, FLIST *flocal, FLIST *fremote, void 
 
 static int preload(PRIV *priv) {
     int status = INT_MIN;
+#ifdef _INCLUDE_progress_h
     PROGRESS progress;
+#endif  /* #ifdef _INCLUDE_progress_h */
     char pathname[PATH_MAX], *name;
     char loadname[PATH_MAX], *p;
     unsigned long count;
@@ -650,7 +669,9 @@ static int preload(PRIV *priv) {
     char buffer[SYMLINK_MAX];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, "U%+jd\n");
+#ifdef _INCLUDE_progress_h
+    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'U');
+#endif  /* #ifdef _INCLUDE_progress_h */
     name = pathname, name += sprintf(name, "%s/", priv->dirname);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
@@ -679,16 +700,15 @@ static int preload(PRIV *priv) {
                 }
                 break;
             }
-            break;
-        }
-        switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE)) {
-        case FST_DNLD|FST_RREG:
-        case FST_DNLD|FST_RLNK:
+#ifdef _INCLUDE_progress_h
             progress_update(&progress, fsynced->st.size);
+#endif  /* #ifdef _INCLUDE_progress_h */
             break;
         }
     }
+#ifdef _INCLUDE_progress_h
     progress_term(&progress);
+#endif  /* #ifdef _INCLUDE_progress_h */
     status = 0;
 error:
     return status;
@@ -763,7 +783,9 @@ error:
 
 static int download(PRIV *priv) {
     int status = INT_MIN;
+#ifdef _INCLUDE_progress_h
     PROGRESS progress;
+#endif  /* #ifdef _INCLUDE_progress_h */
     char loadname[PATH_MAX], *p;
     unsigned long count;
     FLIST *fsynced;
@@ -774,7 +796,9 @@ static int download(PRIV *priv) {
     struct timeval tv[2];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, "D%+jd\n");
+#ifdef _INCLUDE_progress_h
+    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'D');
+#endif  /* #ifdef _INCLUDE_progress_h */
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
     count = 0;
     for (fsynced = priv->fsynced.next; *fsynced->name; fsynced = fsynced->next) {
@@ -803,7 +827,9 @@ static int download(PRIV *priv) {
                         goto error;
                     }
                     size -= n;
+#ifdef _INCLUDE_progress_h
                     progress_update(&progress, n);
+#endif  /* #ifdef _INCLUDE_progress_h */
                 }
                 close(fd), fd = -1;
                 if (chmod(loadname, fsynced->st.mode & (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
@@ -825,7 +851,9 @@ static int download(PRIV *priv) {
                     status = ERROR_FWRITE;
                     goto error;
                 }
+#ifdef _INCLUDE_progress_h
                 progress_update(&progress, size);
+#endif  /* #ifdef _INCLUDE_progress_h */
                 break;
             }
             tv[0].tv_sec = fsynced->st.mtime, tv[0].tv_usec = 0;
@@ -837,7 +865,9 @@ static int download(PRIV *priv) {
             break;
         }
     }
+#ifdef _INCLUDE_progress_h
     progress_term(&progress);
+#endif  /* #ifdef _INCLUDE_progress_h */
     status = 0;
 error:
     if (fd != -1)
@@ -849,6 +879,9 @@ static int commit(PRIV *priv) {
     int status = INT_MIN;
     char pathname[PATH_MAX], *name;
     char loadname[PATH_MAX], *p;
+#ifdef _INCLUDE_progress_h
+    PROGRESS progress;
+#endif  /* #ifdef _INCLUDE_progress_h */
     unsigned long count;
     FLIST *fsynced;
     struct timeval tv[2];
@@ -856,6 +889,9 @@ static int commit(PRIV *priv) {
     ONSTOP(priv->stop, ERROR_STOP);
     name = pathname, name += sprintf(name, "%s/", priv->dirname);
     p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
+#ifdef _INCLUDE_progress_h
+    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'R');
+#endif  /* #ifdef _INCLUDE_progress_h */
     count = 0;
     for (fsynced = priv->fsynced.prev; *fsynced->name; fsynced = fsynced->prev)
         switch (fsynced->st.flags & (FST_DNLD|FST_LTYPE)) {
@@ -866,6 +902,9 @@ static int commit(PRIV *priv) {
                 status = ERROR_FMOVE;
                 goto error;
             }
+#ifdef _INCLUDE_progress_h
+            progress_update(&progress, 1);
+#endif  /* #ifdef _INCLUDE_progress_h */
             break;
         case FST_DNLD|FST_LLNK:
             strcpy(name, fsynced->name);
@@ -873,6 +912,9 @@ static int commit(PRIV *priv) {
                 status = ERROR_FREMOVE;
                 goto error;
             }
+#ifdef _INCLUDE_progress_h
+            progress_update(&progress, 1);
+#endif  /* #ifdef _INCLUDE_progress_h */
             break;
         case FST_DNLD|FST_LDIR:
             switch (fsynced->st.flags & FST_RTYPE) {
@@ -888,6 +930,10 @@ static int commit(PRIV *priv) {
             }
             break;
         }
+#ifdef _INCLUDE_progress_h
+    progress_term(&progress);
+    progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'C');
+#endif  /* #ifdef _INCLUDE_progress_h */
     count = 0;
     for (fsynced = priv->fsynced.next; *fsynced->name; fsynced = fsynced->next)
         switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE)) {
@@ -899,6 +945,9 @@ static int commit(PRIV *priv) {
                 status = ERROR_FMOVE;
                 goto error;
             }
+#ifdef _INCLUDE_progress_h
+            progress_update(&progress, 1);
+#endif  /* #ifdef _INCLUDE_progress_h */
             break;
         case FST_DNLD|FST_RDIR:
             switch (fsynced->st.flags & FST_LTYPE) {
@@ -921,6 +970,9 @@ static int commit(PRIV *priv) {
             }
             break;
         }
+#ifdef _INCLUDE_progress_h
+    progress_term(&progress);
+#endif  /* #ifdef _INCLUDE_progress_h */
     for (fsynced = priv->fsynced.prev; *fsynced->name; fsynced = fsynced->prev)
         switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE)) {
         case FST_DNLD|FST_RDIR:

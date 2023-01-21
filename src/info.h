@@ -1,6 +1,6 @@
-/* progress.h - Last modified: 21-Jan-2023 (kobayasy)
+/* info.h - Last modified: 21-Jan-2023 (kobayasy)
  *
- * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -23,22 +23,12 @@
  * SOFTWARE.
  */
 
-#ifndef _INCLUDE_progress_h
-#define _INCLUDE_progress_h
+#ifndef _INCLUDE_info_h
+#define _INCLUDE_info_h
 
-#include <stdint.h>
+#include <stddef.h>
 
-typedef struct {
-    int fd;
-    unsigned long interval;
-    char format[7];
-    intmax_t update, data;
-    struct timespec last;
-} PROGRESS;
+extern void info_init(size_t namelen);
+extern void info_print(unsigned int host, const char *line);
 
-extern int progress_init(PROGRESS *progress, intmax_t update,
-                         int fd, unsigned long interval, char id );
-extern int progress_update(PROGRESS *progress, intmax_t update);
-extern int progress_term(PROGRESS *progress);
-
-#endif  /* #ifndef _INCLUDE_progress_h */
+#endif  /* #ifndef _INCLUDE_info_h */

@@ -1,6 +1,6 @@
-/* psync_psp1.c - Last modified: 20-May-2022 (kobayasy)
+/* psync_psp1.c - Last modified: 21-Jan-2023 (kobayasy)
  *
- * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -46,7 +46,6 @@ typedef struct s_clist {
     char *dirname;
     time_t expire;
     time_t backup;
-    void *data;
     char name[1];
 } CLIST;
 
@@ -55,7 +54,6 @@ static CLIST *new_CLIST(CLIST *clist) {
     clist->dirname = clist->name;
     clist->expire = 0;
     clist->backup = 0;
-    clist->data = NULL;
     return clist;
 }
 
@@ -73,7 +71,6 @@ static CLIST *add_CLIST(CLIST *clist, const char *name, const char *dirname) {
     cnew->dirname = strcpy(cnew->name + length, dirname);
     cnew->expire = 0;
     cnew->backup = 0;
-    cnew->data = NULL;
     LIST_INSERT_NEXT(cnew, clist);
 error:
     return cnew;
@@ -85,8 +82,6 @@ static int delete_func(CLIST *c, void *data) {
     int status = INT_MIN;
 
     LIST_DELETE(c);
-    if (c->data != NULL)
-        free(c->data);
     free(c);
     status = 0;
     return status;
@@ -117,8 +112,6 @@ error:
 
 static void free_priv(PRIV *priv) {
     each_next_CLIST(&priv->head, delete_func, NULL, NULL);
-    if (priv->head.data != NULL)
-        free(priv->head.data);
     free(priv);
 }
 
@@ -212,13 +205,13 @@ static int run_master(PSYNC_MODE mode, PRIV *priv) {
         READ_ONERR(ack, priv->fdin, read_size, ERROR_PROTOCOL);
         if (!ack) {
             if (priv->info != -1)
-                dprintf(priv->info, "R%s\n", priv->config->name);
+                dprintf(priv->info, "[%s\n", priv->config->name);
             if (ISERR(status = run(mode, priv)))
                 goto error;
             if (priv->info != -1) {
                 if (status)
                     dprintf(priv->info, "!%+d\n", status);
-                dprintf(priv->info, "R\n");
+                dprintf(priv->info, "]\n");
             }
         }
     }
@@ -259,13 +252,13 @@ static int run_slave(PSYNC_MODE mode, PRIV *priv) {
         WRITE_ONERR(ack, priv->fdout, write_size, ERROR_PROTOCOL);
         if (!ack) {
             if (priv->info != -1)
-                dprintf(priv->info, "R%s\n", priv->config->name);
+                dprintf(priv->info, "[%s\n", priv->config->name);
             if (ISERR(status = run(mode, priv)))
                 goto error;
             if (priv->info != -1) {
                 if (status)
                     dprintf(priv->info, "!%+d\n", status);
-                dprintf(priv->info, "R\n");
+                dprintf(priv->info, "]\n");
             }
         }
         READ_ONERR(length, priv->fdin, read_size, ERROR_PROTOCOL);

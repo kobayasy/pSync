@@ -1,6 +1,6 @@
-/* main.c - Last modified: 05-Feb-2022 (kobayasy)
+/* main.c - Last modified: 21-Jan-2023 (kobayasy)
  *
- * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -25,14 +25,11 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
-#else  /* #ifdef HAVE_CONFIG_H */
-#define PACKAGE_STRING "pSync"
 #endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <ctype.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -42,61 +39,83 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#ifdef HAVE_TGETENT
-#include <termcap.h>
-#endif  /* #ifdef HAVE_TGETENT */
 #include "common.h"
 #include "psync_psp1.h"
 #include "popen3.h"
+#include "info.h"
 
+#ifndef PACKAGE_STRING
+#define PACKAGE_STRING "pSync"
+#endif  /* #ifndef PACKAGE_STRING */
+#ifndef CONFFILE
 #define CONFFILE ".psync.conf"
+#endif  /* #ifndef CONFFILE */
 
 #define ERROR_HELP    3
 #define ERROR_ENVS (-26)
 #define ERROR_CONF (-27)
 #define ERROR_ARGS (-28)
 
-static const char *error_message(int status) {
-    static const char *message[] = {
-        [0]               = "No error",
-        [1]               = "Unknown",
-        [-ERROR_FTYPE]    = "File type",
-        [-ERROR_FPERM]    = "File permission",
-        [-ERROR_FMAKE]    = "Make file",
-        [-ERROR_FOPEN]    = "Open file",
-        [-ERROR_FWRITE]   = "Write file",
-        [-ERROR_FREAD]    = "Read file",
-        [-ERROR_FLINK]    = "Link file",
-        [-ERROR_FREMOVE]  = "Remove file",
-        [-ERROR_FMOVE]    = "Move file",
-        [-ERROR_SWRITE]   = "Write file-stat",
-        [-ERROR_SREAD]    = "Read file-stat",
-        [-ERROR_SUPLD]    = "Upload file-stat",
-        [-ERROR_SDNLD]    = "Download file-stat",
-        [-ERROR_FUPLD]    = "Upload file",
-        [-ERROR_FDNLD]    = "Download file",
-        [-ERROR_DMAKE]    = "Make data-file",
-        [-ERROR_DOPEN]    = "Open data-file",
-        [-ERROR_DWRITE]   = "Write data-file",
-        [-ERROR_DREAD]    = "Read data-file",
-        [-ERROR_DREMOVE]  = "Remove data-file",
-        [-ERROR_MEMORY]   = "Memory",
-        [-ERROR_SYSTEM]   = "System",
-        [-ERROR_STOP]     = "Interrupted",
-        [-ERROR_PROTOCOL] = "Protocol",
-        [-ERROR_ENVS]     = "Environment",
-        [-ERROR_CONF]     = "Configuration",
-        [-ERROR_ARGS]     = "Argument"
-    };
-    int n;
+static struct {
+    volatile sig_atomic_t stop;
+    size_t namelen;
+} priv = {
+    .stop = 0
+};
 
-    if (!ISERR(status))
+static void *info_thread(void *data) {
+    int *infos = data;
+    struct pollfd fds[2];
+    unsigned int host;
+    char buffer[1024];
+    ssize_t size;
+    char *line, *s;
+    unsigned int n;
+
+    info_init(priv.namelen);
+    for (n = 0; n < 2; ++n)
+        fds[n].events = POLLIN;
+    while (n > 0) {
+        if (ISSTOP(&priv.stop))
+            goto error;
         n = 0;
-    else if (status < -(sizeof(message)/sizeof(*message)))
-        n = 1;
-    else
-        n = -status;
-    return message[n];
+        for (host = 0; host < 2; ++host)
+            if (infos[host] != -1) {
+                fds[n].fd = infos[host];
+                ++n;
+            }
+        if (!n)
+            continue;
+        if (poll(fds, n, -1) < 1)
+            goto error;
+        n = 0;
+        for (host = 0; host < 2; ++host)
+            if (infos[host] != -1) {
+                if (fds[n].revents & POLLIN) {
+                    size = read(infos[host], buffer, sizeof(buffer));
+                    switch (size) {
+                    case -1:
+                        goto error;
+                    case  0:  /* end of file */
+                        infos[host] = -1;
+                        break;
+                    default:
+                        buffer[size] = 0;
+                        s = buffer;
+                        while (line = s, s = strchr(line, '\n'), s != NULL) {
+                            *s++ = 0;
+                            info_print(host, line);
+                        }
+                    }
+                }
+                else if (fds[n].revents)
+                    infos[host] = -1;
+                ++n;
+            }
+    }
+    info_print(0, "!");
+error:
+    return NULL;
 }
 
 typedef struct {
@@ -163,234 +182,6 @@ error:
     return status;
 }
 
-static struct {
-    volatile sig_atomic_t stop;
-    size_t length;
-    char *format;
-    int columns;
-} priv = {
-    .stop = 0,
-    .format = NULL,
-    .columns = 80
-};
-
-#define INFOBUF 1024
-typedef struct {
-    void (*func)(unsigned int id, const char *info);
-    int fd;
-} INFO_PARAM;
-
-static void *info_thread(void *data) {
-    INFO_PARAM *param = data;
-    unsigned int id;
-    struct pollfd fds[2];
-    char buffer[INFOBUF];
-    ssize_t size;
-    char *info, *s;
-
-    for (id = 0; id < 2; ++id) {
-        param[id].func(id, "[");
-        fds[id].fd = param[id].fd, fds[id].events = POLLIN;
-    }
-    while (fds[0].fd != -1 || fds[1].fd != -1) {
-        if (ISSTOP(&priv.stop))
-            goto error;
-        if (poll(fds, 2, -1) < 1)
-            goto error;
-        for (id = 0; id < 2; ++id)
-            if (fds[id].revents & POLLIN) {
-                size = read(fds[id].fd, buffer, sizeof(buffer));
-                switch (size) {
-                case -1:
-                    goto error;
-                case  0:  /* end of file */
-                    fds[id].fd = -1;
-                    break;
-                default:
-                    buffer[size] = 0;
-                    s = buffer;
-                    while (info = s, s = strchr(info, '\n'), s != NULL) {
-                        *s++ = 0;
-                        param[id].func(id, info);
-                    }
-                }
-            }
-            else if (fds[id].revents)
-                fds[id].fd = -1;
-    }
-error:
-    for (id = 0; id < 2; ++id)
-        param[id].func(id, "]");
-    return NULL;
-}
-
-static int strfnum(char *str, size_t size, intmax_t num) {
-    int status = INT_MIN;
-    const char *unit = "kMGTPEZY";
-
-    if (num <  1024 && num > -1024)
-        status = snprintf(str, size, "%10jd", num);
-    else {
-        while (num >=  1024*1024 || num <= -1024*1024) {
-            if (!*++unit)
-                goto error;
-            num /= 1024;
-        }
-        status = snprintf(str, size, "%9.3f%c", (double)(int32_t)num / 1024, *unit);
-    }
-error:
-    return status;
-}
-
-#ifdef HAVE_TGETENT
-static char *progress_format(int *columns) {
-    char *format = NULL;
-    char ent[1024];
-    char buffer[1024], *s;
-    int n;
-
-    s = getenv("TERM");
-    if (s == NULL)
-        goto error;
-    if (tgetent(ent, s) != 1)
-        goto error;
-    s = buffer;
-    if (tgetstr("mr", &s) == NULL)
-        goto error;
-    --s;
-    s += sprintf(s, "%%.*s");
-    if (tgetstr("me", &s) == NULL)
-        goto error;
-    --s;
-    s += sprintf(s, "%%s");
-    if (columns != NULL) {
-        n = tgetnum("co");
-        if (n != -1)
-            *columns = n;
-    }
-    format = strdup(buffer);
-error:
-    return format;
-}
-#endif  /* #ifdef HAVE_TGETENT */
-
-static char *progress_bar(char *buffer, const char *format,
-                          const char *text, intmax_t current, intmax_t goal ) {
-    size_t n;
-
-    if (format != NULL) {
-        n = strlen(text);
-        if (current < goal)
-            n = current * n / goal;
-        if (n > 0)
-            sprintf(buffer, format, n, text, text + n);
-        else
-            strcpy(buffer, text);
-    }
-    else
-        strcpy(buffer, text);
-    return buffer;
-}
-
-#define INFO_NEWLINE  0x1
-#define INFO_MESSAGE  0x2
-#define INFO_STATUS   0x4
-#define INFO_PROGRESS 0x8
-#define PROGBUF 1024
-#define PROGBAR   25
-static void info_func(unsigned int id, const char *info) {
-    static struct {
-        const char *id, *dir;
-        char name[PROGBUF];
-        intmax_t upload;
-        char buffer[PROGBUF];
-    } progress[] = {
-        {.id = "L:", .dir = "D", .name = "", .upload = 0, .buffer = ""},
-        {.id = "R:", .dir = "U", .name = "", .upload = 0, .buffer = ""}
-    };
-    static unsigned int newline = 1;
-    static char name[PROGBUF] = "";
-    intmax_t download = 0;
-    int status = INT_MIN;
-    unsigned int state = 0;
-    char buffer[PROGBAR+1], *s;
-
-    switch (*info++) {
-    case '[':
-    case ']':
-        state |= INFO_NEWLINE;
-        break;
-    case '!':
-        switch (*info) {
-        case '+':
-        case '-':
-            status = strtol(info, NULL, 10);
-            state |= INFO_STATUS;
-            break;
-        default:
-            state |= INFO_MESSAGE;
-            break;
-        }
-        break;
-    case 'R':
-        strcpy(progress[id].name, info);
-        progress[id].upload = 0;
-        if (!strcmp(progress[id].name, progress[!id].name)) {
-            strcpy(name, progress[id].name);
-            *progress[id].buffer = 0, *progress[!id].buffer = 0;
-            state |= INFO_NEWLINE;
-            if (*name)
-                state |= INFO_PROGRESS;
-        }
-        break;
-    case 'U':
-        if (priv.columns > priv.length + (1+PROGBAR)*2) {
-            progress[id].upload = strtoll(info, NULL, 10);
-            state |= INFO_PROGRESS;
-        }
-        break;
-    case 'D':
-        if (priv.columns > priv.length + (1+PROGBAR)*2) {
-            download = strtoll(info, NULL, 10);
-            state |= INFO_PROGRESS;
-        }
-        break;
-    }
-    if (state & INFO_NEWLINE)
-        if (newline == 0)
-            dprintf(STDOUT_FILENO, "\n"), newline = 1;
-    if (state & INFO_MESSAGE)
-        dprintf(STDOUT_FILENO, "\n%s%s  %s\n" + newline, progress[id].id, progress[id].name, info), newline = 1;
-    if (state & INFO_STATUS)
-        switch (status) {
-        case ERROR_NOTREADYLOCAL:
-            dprintf(STDOUT_FILENO, "\n%s%s  Skip, not ready\n" + newline, progress[id].id, progress[id].name), newline = 1;
-            break;
-        default:
-            if (ISERR(status))
-                dprintf(STDOUT_FILENO, "\n%s%s  %s\n" + newline, progress[id].id, progress[id].name, error_message(status)), newline = 1;
-        }
-    if (state & INFO_PROGRESS) {
-        if (progress[id].upload > 0) {
-            s = buffer;
-            s += sprintf(s, "[%s", progress[id].dir);
-            if (download > 0) {
-                s += strfnum(s, 11, download);
-                s += sprintf(s, " /");
-            }
-            s += strfnum(s, 11, progress[id].upload);
-            s += sprintf(s, "]");
-            s = progress[id].buffer;
-            *s++ = ' ';
-            progress_bar(s, priv.format, buffer, download, progress[id].upload);
-        }
-        if (*progress[0].buffer || *progress[1].buffer)
-            dprintf(STDOUT_FILENO, "\r%-*s%s%s" + newline, priv.length, name, progress[0].buffer, progress[1].buffer), newline = 0;
-        else
-            dprintf(STDOUT_FILENO, "\r%s" + newline, name), newline = 0;
-    }
-}
-
 static void sighandler(int signo) {
     priv.stop = 1;
 }
@@ -405,7 +196,7 @@ static int run_local(int fdin, int fdout, int info, pid_t pid, void *data) {
     int status = INT_MIN;
     RUN_PARAM *param = data;
     int info_pipe[2] = {-1, -1};
-    INFO_PARAM info_param[2] = {{.func = info_func}, {.func = info_func}};
+    int infos[2];
     pthread_t info_tid;
     SIGACT oldact;
 
@@ -415,10 +206,10 @@ static int run_local(int fdin, int fdout, int info, pid_t pid, void *data) {
             status = ERROR_SYSTEM;
             goto error;
         }
-        info_param[0].fd = info_pipe[0];
-        info_param[1].fd = info;
+        infos[0] = info_pipe[0];
+        infos[1] = info;
         param->psp->info = info_pipe[1];
-        if (pthread_create(&info_tid, NULL, info_thread, info_param) != 0) {
+        if (pthread_create(&info_tid, NULL, info_thread, infos) != 0) {
             status = ERROR_SYSTEM;
             goto error;
         }
@@ -742,10 +533,7 @@ int main(int argc, char *argv[]) {
     status = get_config(CONFFILE, psp);
     if (ISERR(status))
         goto run;
-    priv.length = status;
-#ifdef HAVE_TGETENT
-    priv.format = progress_format(&priv.columns);
-#endif  /* #ifdef HAVE_TGETENT */
+    priv.namelen = status;
     status = get_opts(argv, &opts);
 run:
     switch (status) {
@@ -757,8 +545,6 @@ run:
             fputc('\n', stdout);
         usage(basename(*argv), stdout);
     }
-    if (priv.format != NULL)
-        free(priv.format);
     if (psp != NULL)
         psp_free(psp);
     if (ISERR(status))
