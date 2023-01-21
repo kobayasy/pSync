@@ -1,5 +1,5 @@
 # .github/workflows/release.yml
-# Last modified: 21-Jan-2023 (kobayasy)
+# Last modified: 17-Jul-2021 (kobayasy)
 
 name: Release
 
@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
     - name: Release
       id: release
-      uses: actions/create-release@v3
+      uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -32,7 +32,7 @@ jobs:
         ln -s src ${{ steps.env.outputs.dist }}
         tar chzf ${{ steps.env.outputs.dist }}.tar.gz ${{ steps.env.outputs.dist }}
     - name: Upload
-      uses: actions/upload-release-asset@v3
+      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:

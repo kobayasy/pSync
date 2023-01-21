@@ -1,5 +1,5 @@
 # .github/workflows/build-linux.yml
-# Last modified: 21-Jan-2023 (kobayasy)
+# Last modified: 17-Jul-2021 (kobayasy)
 
 name: Linux
 
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
     - name: Build and install
       run: |
         mkdir build
