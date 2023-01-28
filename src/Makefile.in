@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 21-Jan-2023 (kobayasy)
+# Makefile.in - Last modified: 28-Jan-2023 (kobayasy)
 #
 # Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -52,16 +52,16 @@ VPATH = @srcdir@
 
 all : $(TARGET)
 
-$(TARGET) : $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
-
 psync.@OBJEXT@ : psync.c common.h progress.h psync.h
 common.@OBJEXT@ : common.c common.h
 progress.@OBJEXT@ : progress.c progress.h
 psync_psp1.@OBJEXT@ : psync_psp1.c common.h psync.h psync_psp1.h
 popen3.@OBJEXT@ : popen3.c popen3.h
-info.@OBJEXT@ : info.c info.h
+info.@OBJEXT@ : info.c info.h config.h
 main.@OBJEXT@ : main.c common.h psync_psp1.h psync.h popen3.h info.h config.h
+
+$(TARGET) : $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 %.@OBJEXT@ : %.c
 	$(CC) $(CFLAGS) $(DEFS) -c $<
