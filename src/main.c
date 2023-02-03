@@ -1,4 +1,4 @@
-/* main.c - Last modified: 21-Jan-2023 (kobayasy)
+/* main.c - Last modified: 03-Feb-2023 (kobayasy)
  *
  * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -495,8 +495,8 @@ static void usage(const char *argv0, FILE *fp) {
           "  -g, --get      oneway get mode\n"
           "\n", fp );
     fputs("options\n"
-          "  -v, --verbose  show progress during transfer (default)\n"
-          "  -q, --quiet    suppress non-error messages\n"
+          "  -v, --verbose  verbose mode (default)\n"
+          "  -q, --quiet    quiet mode\n"
           "\n", fp );
     fputs("subcommand\n"
           "  --help         show this help\n"

@@ -1,5 +1,5 @@
 # .github/workflows/release.yml
-# Last modified: 21-Jan-2023 (kobayasy)
+# Last modified: 03-Feb-2023 (kobayasy)
 
 name: Release
 
@@ -26,7 +26,7 @@ jobs:
     - name: Setenv
       id: env
       run: |
-        echo ::set-output name=dist::"psync-`basename '${{ github.ref }}'`"
+        echo "dist=psync-`basename '${{ github.ref }}'`" >> $GITHUB_OUTPUT
     - name: Preparate
       run: |
         ln -s src ${{ steps.env.outputs.dist }}

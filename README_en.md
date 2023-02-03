@@ -22,9 +22,9 @@ So for this to work, you must be able to login to the sync-host with [OpenSSH].
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.21/psync-2.21.tar.gz
-tar xzf psync-2.21.tar.gz
-cd psync-2.21
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.22/psync-2.22.tar.gz
+tar xzf psync-2.22.tar.gz
+cd psync-2.22
 ./configure --prefix=$HOME
 make install
 ```
