@@ -1,4 +1,4 @@
-/* info.c - Last modified: 04-Feb-2023 (kobayasy)
+/* info.c - Last modified: 05-Feb-2023 (kobayasy)
  *
  * Copyright (c) 2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -334,8 +334,6 @@ void info_print(unsigned int host, const char *line) {
         s += sprintf(s, "%sError - %s", hostname[host], line);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
-    }
-    switch (update) {
     case  1:
         s = buffer;
         s += tsetrow(s, progress->row, &g.tent);
