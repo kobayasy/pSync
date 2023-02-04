@@ -22,11 +22,12 @@ So for this to work, you must be able to login to the sync-host with [OpenSSH].
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.22/psync-2.22.tar.gz
-tar xzf psync-2.22.tar.gz
-cd psync-2.22
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.23/psync-2.23.tar.gz
+tar xzf psync-2.23.tar.gz
+cd psync-2.23
 ./configure --prefix=$HOME
 make install
+
 ```
 2. Add ~/bin in the PATH if not included.
 3. When using for the 1st time, do the following too.
@@ -37,16 +38,19 @@ cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
 #ID   Directory
 psync pSync
 .
+
 ```
 
 ## Usage
 1. Do the following to show usage.
 ```
 psync --help
+
 ```
 2. For example, when synchronizing with `guest@example.com`.
 ```
 psync guest@example.com
+
 ```
 
 [pSync]: https://github.com/kobayasy/pSync

@@ -1,4 +1,4 @@
-/* info.c - Last modified: 21-Jan-2023 (kobayasy)
+/* info.c - Last modified: 04-Feb-2023 (kobayasy)
  *
  * Copyright (c) 2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -351,23 +351,37 @@ void info_print(unsigned int host, const char *line) {
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  3:
+        n1 = progress->host[0].downloaded + progress->host[1].downloaded;
+        n2 = progress->host[0].upload + progress->host[1].upload;
+        if (n1 > 0)
+            strfnum(buffer1, sizeof(buffer1)-1, n1);
+        else
+            *buffer1 = 0;
+        if (n2 > 0)
+            strfnum(buffer2, sizeof(buffer2)-1, n2);
+        else
+            *buffer2 = 0;
         s = buffer;
         s += tsetrow(s, progress->row, &g.tent);
         s += sprintf(s, "%-*s ", (int)g.namelen, progress->name);
-        n1 = progress->host[0].downloaded + progress->host[1].downloaded;
-        n2 = progress->host[0].upload + progress->host[1].upload;
-        s += tbar(s, n1, n2, &g.tent, "[%s /%s ]",
-                  strfnum(buffer1, sizeof(buffer1)-1, n1),
-                  strfnum(buffer2, sizeof(buffer2)-1, n2) );
+        s += tbar(s, n1, n2, &g.tent, "[%11s /%11s ]", buffer1, buffer2);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  4:
+        n1 = progress->host[0].fileremove + progress->host[1].fileremove;
+        n2 = progress->host[0].filecopy + progress->host[1].filecopy;
+        if (n1 > 0)
+            snprintf(buffer1, sizeof(buffer1), "%+11jd", -n1);
+        else
+            *buffer1 = 0;
+        if (n2 > 0)
+            snprintf(buffer2, sizeof(buffer2), "%+11jd",  n2);
+        else
+            *buffer2 = 0;
         s = buffer;
         s += tsetrow(s, progress->row, &g.tent);
         s += sprintf(s, "%-*s ", (int)g.namelen, progress->name);
-        s += tbar(s, 1, 1, &g.tent, "[%+11jd :%+11jd ]",
-                  -(progress->host[0].fileremove + progress->host[1].fileremove),
-                  progress->host[0].filecopy + progress->host[1].filecopy );
+        s += tbar(s, 1, 1, &g.tent, "[%11s :%11s ]", buffer1, buffer2);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     }
