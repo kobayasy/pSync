@@ -1,4 +1,4 @@
-/* main.c - Last modified: 03-Feb-2023 (kobayasy)
+/* main.c - Last modified: 18-Feb-2023 (kobayasy)
  *
  * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -34,7 +34,6 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
-#include <libgen.h>
 #include <poll.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -47,9 +46,21 @@
 #ifndef PACKAGE_STRING
 #define PACKAGE_STRING "pSync"
 #endif  /* #ifndef PACKAGE_STRING */
+#ifndef PACKAGE_TARNAME
+#define PACKAGE_TARNAME "psync"
+#endif  /* #ifndef PACKAGE_TARNAME */
 #ifndef CONFFILE
 #define CONFFILE ".psync.conf"
 #endif  /* #ifndef CONFFILE */
+#ifndef SSH
+#define SSH "ssh"
+#endif  /* #ifndef SSH */
+#ifndef SSHOPTS
+#define SSHOPTS "-qCp%u"
+#endif  /* #ifndef SSHOPTS */
+#ifndef SSHPORT
+#define SSHPORT 22
+#endif  /* #ifndef SSHPORT */
 
 #define ERROR_HELP    3
 #define ERROR_ENVS (-26)
@@ -261,9 +272,13 @@ static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
         .psp = psp,
         .verbose = verbose
     };
-    char *remote_args[] = {"ssh", "-qCp", "22", hostname, "psync --remote", NULL};
-    char **port = &remote_args[2];
-    char *s;
+    signed long port;
+    char opts[128];
+    char *argv[] = {
+        SSH, opts, hostname, PACKAGE_TARNAME" --remote",
+        NULL
+    };
+    char *s, *p;
 
     if (hostname != NULL) {
         s = strchr(hostname, '@');
@@ -272,16 +287,33 @@ static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
         else
             s = hostname;
         s = strrchr(s, '#');
-        if (s != NULL)
-            *s++ = 0, *port = s;
-        status = popen3(remote_args, run_local, &param);
+        if (s != NULL) {
+            *s++ = 0;
+            if (!*s) {
+                status = ERROR_ARGS;
+                goto error;
+            }
+            port = strtol(s, &p, 10);
+            if (*p) {
+                status = ERROR_ARGS;
+                goto error;
+            }
+        }
+        else
+            port = SSHPORT;
+        if (port < 0 || port > 65535) {
+            status = ERROR_ARGS;
+            goto error;
+        }
+        snprintf(opts, sizeof(opts), SSHOPTS, (unsigned int)port);
+        status = popen3(argv, run_local, &param);
     }
     else
         status = run_remote(STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO, 0, &param);
+error:
     return status;
 }
 
-#define CONFBUF 1024
 #define CONFREM '#'
 #define CONFTOK " \t\r\n"
 static int get_config(const char *confname, PSP *psp) {
@@ -289,7 +321,7 @@ static int get_config(const char *confname, PSP *psp) {
     size_t length = 0;
     FILE *fp = NULL;
     unsigned int line;
-    char buffer[CONFBUF];
+    char buffer[1024];
     PSP_CONFIG *config;
     char *name;
     unsigned int argc;
@@ -476,31 +508,31 @@ error:
     return status;
 }
 
-static void usage(const char *argv0, FILE *fp) {
-    fprintf(fp, "%s (protocol %c%c%c%u)\n"
-                "\n", PACKAGE_STRING, PSYNC_PROTID, PSYNC_PROTID >> 8, PSYNC_PROTID >> 16, PSYNC_PROTID >> 24 );
-    fprintf(fp, "Usage: %s [--sync] [-v|-q] [USER@]HOST[#PORT]\n"
-                "       %s --put [-v|-q] [USER@]HOST[#PORT]\n"
-                "       %s --get [-v|-q] [USER@]HOST[#PORT]\n"
-                "       %s --help\n"
-                "\n", argv0, argv0, argv0, argv0 );
-    fputs("USER@HOST#PORT\n"
-          "  HOST           hostname\n"
-          "  USER           username (default: current login user)\n"
-          "  PORT           SSH port (default: 22)\n"
-          "\n", fp );
-    fputs("runmode\n"
-          "  -s, --sync     synchronous mode (default)\n"
-          "  -p, --put      oneway put mode\n"
-          "  -g, --get      oneway get mode\n"
-          "\n", fp );
-    fputs("options\n"
-          "  -v, --verbose  verbose mode (default)\n"
-          "  -q, --quiet    quiet mode\n"
-          "\n", fp );
-    fputs("subcommand\n"
-          "  --help         show this help\n"
-          "\n", fp );
+static void usage(FILE *fp) {
+    fprintf(fp, PACKAGE_STRING" (protocol %c%c%c%u)\n"
+                "\n", PSYNC_PROTID, PSYNC_PROTID >> 8, PSYNC_PROTID >> 16, PSYNC_PROTID >> 24 );
+    fprintf(fp, "Usage: "PACKAGE_TARNAME" [--sync] [-v|-q] [USER@]HOST[#PORT]\n"
+                "       "PACKAGE_TARNAME" --put [-v|-q] [USER@]HOST[#PORT]\n"
+                "       "PACKAGE_TARNAME" --get [-v|-q] [USER@]HOST[#PORT]\n"
+                "       "PACKAGE_TARNAME" --help\n"
+                "\n" );
+    fprintf(fp, "USER@HOST#PORT\n"
+                "  HOST           hostname\n"
+                "  USER           username (default: current login user)\n"
+                "  PORT           SSH port (default: %u)\n"
+                "\n", SSHPORT );
+    fprintf(fp, "runmode\n"
+                "  -s, --sync     synchronous mode (default)\n"
+                "  -p, --put      oneway put mode\n"
+                "  -g, --get      oneway get mode\n"
+                "\n" );
+    fprintf(fp, "options\n"
+                "  -v, --verbose  verbose mode (default)\n"
+                "  -q, --quiet    quiet mode\n"
+                "\n" );
+    fprintf(fp, "subcommand\n"
+                "  --help         show this help\n"
+                "\n" );
 }
 
 int main(int argc, char *argv[]) {
@@ -539,11 +571,13 @@ run:
     switch (status) {
     case 0:
         status = run(opts.mode, psp, opts.verbose, opts.hostname);
-        break;
+        if (status != ERROR_ARGS)
+            break;
+        fprintf(stderr, "Error: PORT is invalid.\n");
     default:
         if (ISERR(status))
             fputc('\n', stdout);
-        usage(basename(*argv), stdout);
+        usage(stdout);
     }
     if (psp != NULL)
         psp_free(psp);

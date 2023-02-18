@@ -39,7 +39,7 @@
 /* Define to 1 if you have the <termcap.h> header file. */
 #undef HAVE_TERMCAP_H
 
-/* Define to 1 if you have the tgetent() function. */
+/* Define to 1 if you have the `tgetent' function. */
 #undef HAVE_TGETENT
 
 /* Define to 1 if you have the <unistd.h> header file. */
@@ -66,6 +66,9 @@
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
 #undef PTHREAD_CREATE_JOINABLE
+
+/* Absolute path to ssh. */
+#undef SSH
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
