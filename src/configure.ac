@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 18-Feb-2023 (kobayasy)
+# configure.ac - Last modified: 23-Feb-2023 (kobayasy)
 #
 # Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 AC_PREREQ(2.69)
-AC_INIT([pSync], [2.25], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
+AC_INIT([pSync], [2.26], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
 
@@ -34,18 +34,26 @@ AC_PROG_INSTALL
 AC_SYS_LARGEFILE
 AX_PTHREAD([LIBS="$PTHREAD_LIBS $LIBS" CFLAGS="$CFLAGS $PTHREAD_CFLAGS" CC="$PTHREAD_CC"])
 AC_CHECK_FUNC([clock_gettime],
-    [],
-    [AC_CHECK_LIB([rt], [clock_gettime])] )
-AC_ARG_ENABLE([progress], AS_HELP_STRING([--disable-progress], [omit showing progress]),
-    [],
-    [AC_CHECK_HEADERS([termcap.h],
-        [AC_CHECK_FUNC([tgetent],
-            [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the `tgetent' function.])],
-            [AC_SEARCH_LIBS([tgetent], [tinfo ncurses],
-                [AC_DEFINE([HAVE_TGETENT], [1])] )] )] )] )
-AC_ARG_ENABLE([sshpath], AS_HELP_STRING([--enable-sshpath], [run ssh with absolute path]),
-    [AC_PATH_PROG([SSH], [ssh]) AS_IF([test "$SSH"],
-        [AC_DEFINE_UNQUOTED([SSH], ["$SSH"], [Absolute path to ssh.])] )] )
+   [],
+   [AC_CHECK_LIB([rt], [clock_gettime])] )
+AC_ARG_ENABLE([progress], [AS_HELP_STRING([--disable-progress], [omit showing progress])],
+   [],
+   [enableval=yes] )
+AS_VAR_IF([enableval], [no],
+   [],
+   [AC_CHECK_HEADERS([termcap.h],
+       [AC_CHECK_FUNC([tgetent],
+           [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the `tgetent' function.])],
+           [AC_SEARCH_LIBS([tgetent], [tinfo ncurses],
+               [AC_DEFINE([HAVE_TGETENT], [1])] )] )] )] )
+AC_ARG_ENABLE([sshpath], [AS_HELP_STRING([--enable-sshpath], [run ssh with absolute path])],
+   [],
+   [enableval=no] )
+AS_VAR_IF([enableval], [yes],
+   [AC_PATH_PROG([SSH], [ssh])
+    AS_VAR_IF([SSH], [],
+       [],
+       [AC_DEFINE_UNQUOTED([SSH], ["$SSH"], [Absolute path to ssh.])] ) ] )
 
 AC_CONFIG_HEADERS([config.h])
 AH_TOP([#ifndef _INCLUDE_config_h

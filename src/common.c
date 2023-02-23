@@ -1,6 +1,6 @@
-/* common.c - Last modified: 29-Apr-2022 (kobayasy)
+/* common.c - Last modified: 23-Feb-2023 (kobayasy)
  *
- * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -25,27 +25,31 @@
 
 #include <limits.h>
 #include <string.h>
-#include <poll.h>
 #include <unistd.h>
+#ifdef POLL_TIMEOUT
+#include <poll.h>
+#endif  /* #ifdef POLL_TIMEOUT */
 #include "common.h"
-
-#ifndef POLL_TIMEOUT
-#define POLL_TIMEOUT -1  /* [msec] */
-#endif  /* #ifndef POLL_TIMEOUT */
 
 ssize_t write_size(int fd, const void *buf, size_t count) {
     ssize_t status = -1;
+#ifdef POLL_TIMEOUT
+    struct pollfd fds = {
+        .fd = fd,
+        .events = POLLOUT
+    };
+#endif  /* #ifdef POLL_TIMEOUT */
     size_t size;
-    struct pollfd fds;
     ssize_t n;
 
     size = count;
-    fds.fd = fd, fds.events = POLLOUT;
     while (size > 0) {
+#ifdef POLL_TIMEOUT
         if (poll(&fds, 1, POLL_TIMEOUT) != 1)
             goto error;
         if (!(fds.revents & POLLOUT))
             goto error;
+#endif  /* #ifdef POLL_TIMEOUT */
         n = write(fd, buf, size);
         switch (n) {
         case -1:
@@ -62,17 +66,23 @@ error:
 
 ssize_t read_size(int fd, void *buf, size_t count) {
     ssize_t status = -1;
+#ifdef POLL_TIMEOUT
+    struct pollfd fds = {
+        .fd = fd,
+        .events = POLLIN
+    };
+#endif  /* #ifdef POLL_TIMEOUT */
     size_t size;
-    struct pollfd fds;
     ssize_t n;
 
     size = count;
-    fds.fd = fd, fds.events = POLLIN;
     while (size > 0) {
+#ifdef POLL_TIMEOUT
         if (poll(&fds, 1, POLL_TIMEOUT) != 1)
             goto error;
         if (!(fds.revents & POLLIN))
             goto error;
+#endif  /* #ifdef POLL_TIMEOUT */
         n = read(fd, buf, size);
         switch (n) {
         case -1:
