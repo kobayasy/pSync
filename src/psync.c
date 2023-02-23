@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 21-Jan-2023 (kobayasy)
+/* psync.c - Last modified: 23-Feb-2023 (kobayasy)
  *
  * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -354,7 +354,10 @@ error:
     return status;
 }
 
-static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *name, PROGRESS *progress,
+static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *name,
+#ifdef _INCLUDE_progress_h
+                        PROGRESS *progress,
+#endif  /* #ifdef _INCLUDE_progress_h */
                         volatile sig_atomic_t *stop ) {
     int status = INT_MIN;
     struct stat st;
@@ -429,7 +432,11 @@ static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *nam
                 !strcmp(ent->d_name, "..") )
                 continue;
             strcpy(p, ent->d_name);
-            if (ISERR(status = get_flocal_r(flocal, flast, pathname, name, progress, stop)))
+            if (ISERR(status = get_flocal_r(flocal, flast, pathname, name,
+#ifdef _INCLUDE_progress_h
+                                            progress,
+#endif  /* #ifdef _INCLUDE_progress_h */
+                                            stop )))
                 goto error;
             if ((*flocal)->st.revision > fdir->st.revision)
                 fdir->st.revision = (*flocal)->st.revision;
@@ -493,7 +500,11 @@ static int get_flocal(PRIV *priv) {
             !strcmp(ent->d_name, SYNCDIR) )
             continue;
         strcpy(name, ent->d_name);
-        if (ISERR(status = get_flocal_r(&flocal, &flast, pathname, name, &progress, priv->stop))) {
+        if (ISERR(status = get_flocal_r(&flocal, &flast, pathname, name,
+#ifdef _INCLUDE_progress_h
+                                        &progress,
+#endif  /* #ifdef _INCLUDE_progress_h */
+                                        priv->stop ))) {
             if (priv->info != -1)
                 switch (status) {
                 case ERROR_FTYPE:
