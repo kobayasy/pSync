@@ -1,4 +1,4 @@
-/* main.c - Last modified: 18-Feb-2023 (kobayasy)
+/* main.c - Last modified: 03-Mar-2023 (kobayasy)
  *
  * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -50,7 +50,7 @@
 #define PACKAGE_TARNAME "psync"
 #endif  /* #ifndef PACKAGE_TARNAME */
 #ifndef CONFFILE
-#define CONFFILE ".psync.conf"
+#define CONFFILE "."PACKAGE_TARNAME".conf"
 #endif  /* #ifndef CONFFILE */
 #ifndef SSH
 #define SSH "ssh"
@@ -113,7 +113,7 @@ static void *info_thread(void *data) {
                     default:
                         buffer[size] = 0;
                         s = buffer;
-                        while (line = s, s = strchr(line, '\n'), s != NULL) {
+                        while ((s = strchr(line = s, '\n')) != NULL) {
                             *s++ = 0;
                             info_print(host, line);
                         }
@@ -265,6 +265,7 @@ error:
     return status;
 }
 
+#define ARGVTOK " \t\r\n"
 static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
     int status = INT_MIN;
     RUN_PARAM param = {
@@ -274,10 +275,8 @@ static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
     };
     signed long port;
     char opts[128];
-    char *argv[] = {
-        SSH, opts, hostname, PACKAGE_TARNAME" --remote",
-        NULL
-    };
+    unsigned int argc;
+    char *argv[64];
     char *s, *p;
 
     if (hostname != NULL) {
@@ -306,6 +305,13 @@ static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
             goto error;
         }
         snprintf(opts, sizeof(opts), SSHOPTS, (unsigned int)port);
+        argc = 0;
+        argv[argc++] = SSH;
+        argv[argc++] = hostname;
+        for (s = strtok(opts, ARGVTOK); s != NULL; s = strtok(NULL, ARGVTOK))
+            argv[argc++] = s;
+        argv[argc++] = PACKAGE_TARNAME" --remote";
+        argv[argc] = NULL;
         status = popen3(argv, run_local, &param);
     }
     else

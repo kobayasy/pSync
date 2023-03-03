@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 23-Feb-2023 (kobayasy)
+# configure.ac - Last modified: 03-Mar-2023 (kobayasy)
 #
 # Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 AC_PREREQ(2.69)
-AC_INIT([pSync], [2.27], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
+AC_INIT([pSync], [2.28], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
 
@@ -46,14 +46,27 @@ AS_VAR_IF([enableval], [no],
            [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the `tgetent' function.])],
            [AC_SEARCH_LIBS([tgetent], [tinfo ncurses],
                [AC_DEFINE([HAVE_TGETENT], [1])] )] )] )] )
-AC_ARG_ENABLE([sshpath], [AS_HELP_STRING([--enable-sshpath], [run ssh with absolute path])],
+AC_ARG_ENABLE([sshpath], [AS_HELP_STRING([--enable-sshpath@<:@=PATH@:>@], [run ssh with absolute path @{:@default: use @S|@PATH@:}@])],
    [],
    [enableval=no] )
-AS_VAR_IF([enableval], [yes],
-   [AC_PATH_PROG([SSH], [ssh])
-    AS_VAR_IF([SSH], [],
+AS_CASE([$enableval],
+   [yes],
+       [AC_PATH_PROG([SSH], [ssh])
+        AS_VAR_IF([SSH], [],
+           [],
+           [AC_DEFINE_UNQUOTED([SSH], ["$SSH"], [Absolute path name of ssh.])] ) ],
+   [no],
        [],
-       [AC_DEFINE_UNQUOTED([SSH], ["$SSH"], [Absolute path to ssh.])] ) ] )
+   [AC_DEFINE_UNQUOTED([SSH], ["$enableval"])] )
+AC_ARG_ENABLE([sshopts], [AS_HELP_STRING([--enable-sshopts=OPTS], [run options for ssh @{:@default: -qCp%u@:}@])],
+   [],
+   [enableval=no] )
+AS_CASE([$enableval],
+   [yes],
+       [],
+   [no],
+       [],
+   [AC_DEFINE_UNQUOTED([SSHOPTS], ["$enableval"], [ssh options to enable quiet and compress, and set port.])] )
 
 AC_CONFIG_HEADERS([config.h])
 AH_TOP([#ifndef _INCLUDE_config_h
