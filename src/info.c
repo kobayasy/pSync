@@ -1,4 +1,4 @@
-/* info.c - Last modified: 05-Feb-2023 (kobayasy)
+/* info.c - Last modified: 11-Mar-2023 (kobayasy)
  *
  * Copyright (c) 2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -113,7 +113,9 @@ typedef struct {
         int cur;
         int min, max;
     } row;
+#ifdef HAVE_TGETENT
     char buffer[1024];
+#endif  /* #ifdef HAVE_TGETENT */
 } TENT;
 
 static void tinit(TENT *tent) {

@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 03-Mar-2023 (kobayasy)
+# configure.ac - Last modified: 11-Mar-2023 (kobayasy)
 #
 # Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 AC_PREREQ(2.69)
-AC_INIT([pSync], [2.28], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
+AC_INIT([pSync], [2.29], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
 
@@ -37,36 +37,28 @@ AC_CHECK_FUNC([clock_gettime],
    [],
    [AC_CHECK_LIB([rt], [clock_gettime])] )
 AC_ARG_ENABLE([progress], [AS_HELP_STRING([--disable-progress], [omit showing progress])],
-   [],
+   [AS_CASE([$enableval],
+     [yes|no],
+       [],
+       [AC_MSG_WARN([invalid option: --enable-progress=$enableval])
+        enableval=yes ] )],
    [enableval=yes] )
-AS_VAR_IF([enableval], [no],
-   [],
+AS_VAR_IF([enableval], [yes],
    [AC_CHECK_HEADERS([termcap.h],
        [AC_CHECK_FUNC([tgetent],
            [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the `tgetent' function.])],
            [AC_SEARCH_LIBS([tgetent], [tinfo ncurses],
                [AC_DEFINE([HAVE_TGETENT], [1])] )] )] )] )
-AC_ARG_ENABLE([sshpath], [AS_HELP_STRING([--enable-sshpath@<:@=PATH@:>@], [run ssh with absolute path @{:@default: use @S|@PATH@:}@])],
-   [],
-   [enableval=no] )
-AS_CASE([$enableval],
-   [yes],
-       [AC_PATH_PROG([SSH], [ssh])
-        AS_VAR_IF([SSH], [],
-           [],
-           [AC_DEFINE_UNQUOTED([SSH], ["$SSH"], [Absolute path name of ssh.])] ) ],
-   [no],
-       [],
-   [AC_DEFINE_UNQUOTED([SSH], ["$enableval"])] )
-AC_ARG_ENABLE([sshopts], [AS_HELP_STRING([--enable-sshopts=OPTS], [run options for ssh @{:@default: -qCp%u@:}@])],
-   [],
-   [enableval=no] )
-AS_CASE([$enableval],
-   [yes],
-       [],
-   [no],
-       [],
-   [AC_DEFINE_UNQUOTED([SSHOPTS], ["$enableval"], [ssh options to enable quiet and compress, and set port.])] )
+AC_ARG_WITH([ssh], [AS_HELP_STRING([--with-ssh=FILE], [executable filename for SSH @{:@default: ssh@:}@])],
+   [AS_CASE([$withval],
+     [yes|no],
+       [AC_MSG_WARN([invalid option: --with-ssh=$withval])],
+       [AC_DEFINE_UNQUOTED([SSH], ["$withval"], [Executable filename for SSH.])] )] )
+AC_ARG_WITH([sshopts], [AS_HELP_STRING([--with-sshopts=OPTS], [command line options for SSH @{:@default: -qCp%u@:}@])],
+   [AS_CASE([$withval],
+     [yes|no],
+       [AC_MSG_WARN([invalid option: --with-sshopts=$withval])],
+       [AC_DEFINE_UNQUOTED([SSHOPTS], ["$withval"], [Command line options to enable quiet and compress, and set port for SSH.])] )] )
 
 AC_CONFIG_HEADERS([config.h])
 AH_TOP([#ifndef _INCLUDE_config_h

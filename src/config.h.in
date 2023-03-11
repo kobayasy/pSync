@@ -67,10 +67,10 @@
    your system. */
 #undef PTHREAD_CREATE_JOINABLE
 
-/* Absolute path name of ssh. */
+/* Executable filename for SSH. */
 #undef SSH
 
-/* ssh options to enable quiet and compress, and set port. */
+/* Command line options to enable quiet and compress, and set port for SSH. */
 #undef SSHOPTS
 
 /* Define to 1 if you have the ANSI C header files. */

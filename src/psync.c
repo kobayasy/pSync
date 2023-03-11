@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 23-Feb-2023 (kobayasy)
+/* psync.c - Last modified: 11-Mar-2023 (kobayasy)
  *
  * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -59,7 +59,7 @@
 #endif  /* #ifdef _INCLUDE_progress_h */
 
 #ifndef SYMLINK_MAX
-#define SYMLINK_MAX PATH_MAX
+#define SYMLINK_MAX (PATH_MAX-1)
 #endif  /* #ifndef SYMLINK_MAX */
 #if LOADBUFFER_SIZE < SYMLINK_MAX
 #undef LOADBUFFER_SIZE
@@ -677,7 +677,7 @@ static int preload(PRIV *priv) {
     char loadname[PATH_MAX], *p;
     unsigned long count;
     FLIST *fsynced;
-    char buffer[SYMLINK_MAX];
+    char buffer[SYMLINK_MAX+1];
 
     ONSTOP(priv->stop, ERROR_STOP);
 #ifdef _INCLUDE_progress_h
@@ -705,6 +705,7 @@ static int preload(PRIV *priv) {
                     status = ERROR_FREAD;
                     goto error;
                 }
+                buffer[fsynced->st.size] = 0;
                 if (symlink(buffer, loadname) == -1) {
                     status = ERROR_FWRITE;
                     goto error;
