@@ -1,4 +1,4 @@
-/* main.c - Last modified: 03-Mar-2023 (kobayasy)
+/* main.c - Last modified: 18-Mar-2023 (kobayasy)
  *
  * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -307,9 +307,9 @@ static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
         snprintf(opts, sizeof(opts), SSHOPTS, (unsigned int)port);
         argc = 0;
         argv[argc++] = SSH;
-        argv[argc++] = hostname;
         for (s = strtok(opts, ARGVTOK); s != NULL; s = strtok(NULL, ARGVTOK))
             argv[argc++] = s;
+        argv[argc++] = hostname;
         argv[argc++] = PACKAGE_TARNAME" --remote";
         argv[argc] = NULL;
         status = popen3(argv, run_local, &param);
