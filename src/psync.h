@@ -1,6 +1,6 @@
-/* psync.h - Last modified: 27-Feb-2020 (kobayasy)
+/* psync.h - Last modified: 29-Mar-2023 (kobayasy)
  *
- * Copyright (c) 2018-2020 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -26,10 +26,21 @@
 #ifndef _INCLUDE_psync_h
 #define _INCLUDE_psync_h
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif  /* #ifdef HAVE_CONFIG_H */
+
 #include <signal.h>
 #include <time.h>
 
 #define PSYNC_FILEID 0x01665370  /* 'p', 'S', 'f', 1 */
+
+#ifndef EXPIRE_DEFAULT
+#define EXPIRE_DEFAULT (400*24*60*60)  /* [sec] */
+#endif  /* #ifndef EXPIRE_DEFAULT */
+#ifndef BACKUP_DEFAULT
+#define BACKUP_DEFAULT   (3*24*60*60)  /* [sec] */
+#endif  /* #ifndef BACKUP_DEFAULT */
 
 //#define ERROR_UNKNOWN  (-1)
 #define ERROR_FTYPE    (-2)

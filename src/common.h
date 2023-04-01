@@ -1,6 +1,6 @@
-/* common.h - Last modified: 17-Mar-2022 (kobayasy)
+/* common.h - Last modified: 29-Mar-2023 (kobayasy)
  *
- * Copyright (c) 2018-2022 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files

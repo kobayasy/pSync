@@ -19,16 +19,16 @@
 <img src="psync.png" alt="pSync" align="right">
 
 [pSync] はオープンソースのクラウドストーレージです。
-[OpenSSH] によって認証/暗号化/圧縮を行い、安全かつ高速にファイル同期を行ないます。
-よってこれを動かすには、[OpenSSH] で同期先ホストへログイン出来る必要が有ります。
+SSH によって認証/暗号化/圧縮を行い、安全かつ高速にファイル同期を行ないます。
+よってこれを動かすには、SSH で同期先ホストへログイン出来る必要が有ります。
 
 ## インストール
 ローカルホストを含めた全ての同期ホストに対してこの作業が必要です。
 1. 以下の手順でビルドとインストールを行ないます。
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.30/psync-2.30.tar.gz
-tar xzf psync-2.30.tar.gz
-cd psync-2.30
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.31/psync-2.31.tar.gz
+tar xzf psync-2.31.tar.gz
+cd psync-2.31
 ./configure --prefix=$HOME
 make install
 
@@ -58,4 +58,3 @@ psync guest@example.com
 ```
 
 [pSync]: https://github.com/kobayasy/pSync
-[OpenSSH]: https://www.openssh.com

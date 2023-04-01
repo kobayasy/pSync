@@ -1,6 +1,7 @@
-./" psync.1 - Last modified: 21-Jan-2023 (kobayasy)
+./" @configure_input@
+./" psync.1.in - Last modified: 01-Apr-2023 (kobayasy)
 ./"
-./" Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+./" Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 ./"
 ./" Permission is hereby granted, free of charge, to any person
 ./" obtaining a copy of this software and associated documentation files
@@ -47,7 +48,7 @@ pSync
 .Ar USER Ns @ Ns Ar HOST
 で指定した相手とファイル同期を行う。
 設定ファイル
-.Pa ~/.psync.conf
+.Pa @CONFFILE@
 で登録されたディレクトリの内、同期元と相手の両方に存在する識別名が付いたディレクトリ内のファイルを同期対象とする。
 .Pp
 .Ar HOST
@@ -64,19 +65,21 @@ pSync
 ファイル同期するホストはシステム時刻が正確に設定されている事。
 pSync はファイルの更新日時と作成日時を元に同期方向を決定する為、システム時刻が正確でないとそれを元に設定されるファイルの日時も不正確になり、正しい同期方向の判定が出来ない。
 .Pp
-pSync は内部で OpenSSH の
-.Nm ssh
-を実行して
+pSync は内部で SSH の
+.Nm @SSH@
+コマンドを実行して
 .Ar HOST
 で指定したホストに
 .Ar USER
 で指定したユーザー名でログインをして同期相手の制御を行う。
-OpenSSH のリモートコマンド実行、ユーザー認証、転送データの暗号化と圧縮の機能を利用して、専用のサーバが不要で、セキュアな高速ファイル転送を実現している。
-その為、pSync を動作させる前提条件として、OpenSSH で同期相手へログインできる環境と
-.Nm ssh
-への実行パスが通っている必要が有る。
+SSH のリモートコマンド実行、ユーザー認証、転送データの暗号化と圧縮の機能を利用して、専用のサーバが不要で、セキュアな高速ファイル転送を実現している。
+その為、pSync を動作させる前提条件として、
+.Nm @SSH@
+で同期相手へログインできる環境設定が出来ている事。
+@SSH_PATH@.Nm @SSH@
+@SSH_PATH@に実行パスが通っている事。
 同期相手にも pSync のインストールが必要で
-.Nm ssh
+.Nm @SSH@
 でログインした状態で
 .Nm
 への実行パスが通っている事。
@@ -84,7 +87,7 @@ OpenSSH のリモートコマンド実行、ユーザー認証、転送データ
 .Ar PORT
 で指定できる。
 .Ar PORT
-は省略可能で、省略した場合は22が指定される。
+は省略可能で、省略した場合は@SSHPORT@が指定される。
 .Pp
 pSync は同期相手側としてリモートで起動される場合も含めて複数同時実行が可能であるが、同期処理中のディレクトリに対して重複して同期を始める事は出来ない。
 もし、重複するような場合は後から同期を始めようとした側の
@@ -180,13 +183,13 @@ pSync は同期相手側としてリモートで起動される場合も含め�
 .It Ev PATH
 実行パスを設定する環境変数。
 .Nm
-と OpenSSH の
-.Nm ssh
-の両方に実行パスが通っている事。
+に実行パスを通す。
+@SSH_PATH@.Nm @SSH@
+@SSH_PATH@にも実行パスを通す。
 .El
 .Sh FILES
 .Bl -tag -width Ds
-.It Pa ~/.psync.conf
+.It Pa @CONFFILE@
 pSync の設定ファイル。
 詳細は
 .Xr psync.conf 5
@@ -321,7 +324,7 @@ pSync が対応しているファイルは通常ファイルとディレクト�
 が正しく設定されてい無い場合はこのエラーになる。
 .It Er 27 Ns , Configuration
 設定ファイルに問題が有る。
-.Pa ~/.psync.conf
+.Pa @CONFFILE@
 が存在しないか存在してもその内容に問題がある場合にこのエラーになる。
 設定ファイルに付いては、
 .Xr psync.conf 5

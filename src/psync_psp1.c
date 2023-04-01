@@ -1,6 +1,6 @@
-/* psync_psp1.c - Last modified: 21-Jan-2023 (kobayasy)
+/* psync_psp1.c - Last modified: 29-Mar-2023 (kobayasy)
  *
- * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -33,13 +33,6 @@
 #include "common.h"
 #include "psync.h"
 #include "psync_psp1.h"
-
-#ifndef EXPIRE_DEFAULT
-#define EXPIRE_DEFAULT 400  /* [day] */
-#endif  /* #ifndef EXPIRE_DEFAULT */
-#ifndef BACKUP_DEFAULT
-#define BACKUP_DEFAULT   3  /* [day] */
-#endif  /* #ifndef BACKUP_DEFAULT */
 
 typedef struct s_clist {
     struct s_clist *next, *prev;
@@ -169,8 +162,8 @@ static int run(PSYNC_MODE mode, PRIV *priv) {
     READ_ONERR(ack_remote, priv->fdin, read_size, ERROR_PROTOCOL);
     if (!ack_local) {
         if (!ack_remote) {
-            psync->expire = psync->t - priv->config->expire * (24*60*60);
-            psync->backup = psync->t - priv->config->backup * (24*60*60);
+            psync->expire = psync->t - priv->config->expire;
+            psync->backup = psync->t - priv->config->backup;
             psync->fdin = priv->fdin, psync->fdout = priv->fdout;
             psync->info = priv->info;
             status = psync_run(mode, psync);

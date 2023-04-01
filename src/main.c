@@ -1,6 +1,6 @@
-/* main.c - Last modified: 18-Mar-2023 (kobayasy)
+/* main.c - Last modified: 29-Mar-2023 (kobayasy)
  *
- * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -24,7 +24,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <ctype.h>

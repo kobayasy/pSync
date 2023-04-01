@@ -3,6 +3,15 @@
 #ifndef _INCLUDE_config_h
 #define _INCLUDE_config_h
 
+/* Retention period for backup files in seconds. */
+#undef BACKUP_DEFAULT
+
+/* Configuration filename. */
+#undef CONFFILE
+
+/* Retention period for file information in seconds. */
+#undef EXPIRE_DEFAULT
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -72,6 +81,9 @@
 
 /* Command line options to enable quiet and compress, and set port for SSH. */
 #undef SSHOPTS
+
+/* Default port number for SSH. */
+#undef SSHPORT
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS

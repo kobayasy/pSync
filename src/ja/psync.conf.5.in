@@ -1,6 +1,7 @@
-./" psync.conf.5 - Last modified: 21-Jan-2023 (kobayasy)
+./" @configure_input@
+./" psync.conf.5.in - Last modified: 01-Apr-2023 (kobayasy)
 ./"
-./" Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+./" Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 ./"
 ./" Permission is hereby granted, free of charge, to any person
 ./" obtaining a copy of this software and associated documentation files
@@ -26,10 +27,10 @@
 .Dt PSYNC.CONF 5
 .Os POSIX
 .Sh NAME
-.Pa ~/.psync.conf
+.Pa @CONFFILE@
 .Nd pSync の設定ファイル
 .Sh DESCRIPTION
-.Pa ~/.psync.conf
+.Pa @CONFFILE@
 は
 .Xr psync 1
 で同期対象とするディレクトリを、1行にその
@@ -50,13 +51,13 @@
 必須のパラメータで省略は出来ない。
 .It Ar バックアップ保持期間
 同期により削除、または更新されたファイルのバックアップを残す期間を何日後までとするかを、10進数文字列で指定する。
-このパラメータは省略可能で、省略した場合は3日後まで残す指定となる。
+このパラメータは省略可能で、省略した場合は@BACKUP@日後まで残す指定となる。
 とりあえずは省略で問題ない。
 .It Ar 削除履歴保持期間
 後で説明する
 ファイル削除履歴
 の保持期間を削除されてから何日後までとするかを、10進数文字列で指定する。
-このパラメータは省略可能で、省略した場合は400日後まで保持する指定となる。
+このパラメータは省略可能で、省略した場合は@EXPIRE@日後まで保持する指定となる。
 とりあえずは省略で問題ない。
 .El
 .Pp
@@ -125,7 +126,7 @@ C の a の削除と b の更新を A を経由してBに同期
 .Pp
 .Pq アルファベットの大文字はホスト、小文字は同期ファイル、 Ns Ao \& と \& Ac で囲まれた - はその左右のホスト間での同期動作 をそれぞれ示す。
 .Sh EXAMPLES
-.Pa ~/.psync.conf
+.Pa @CONFFILE@
 への同期ディレクトリの登録と、その同期動作例を示す。
 .Bl -enum -offset indent
 .It
@@ -144,7 +145,7 @@ psync で登録。
 .Ar バックアップ保持期間
 と
 .Ar 削除履歴保持期間
-は省略されているので、それぞれ3日と400日に設定される。
+は省略されているので、それぞれ@BACKUP@日と@EXPIRE@日に設定される。
 1行目は先頭が
 .Li #
 なので、行全体がコメント文と認識され無視される。

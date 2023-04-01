@@ -1,6 +1,6 @@
-/* progress.c - Last modified: 21-Jan-2023 (kobayasy)
+/* progress.c - Last modified: 29-Mar-2023 (kobayasy)
  *
- * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files

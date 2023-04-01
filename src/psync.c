@@ -1,6 +1,6 @@
-/* psync.c - Last modified: 11-Mar-2023 (kobayasy)
+/* psync.c - Last modified: 29-Mar-2023 (kobayasy)
  *
- * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -23,6 +23,10 @@
  * SOFTWARE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif  /* #ifdef HAVE_CONFIG_H */
+
 #include <limits.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -43,12 +47,6 @@
 #include "progress.h"
 #include "psync.h"
 
-#ifndef EXPIRE_DEFAULT
-#define EXPIRE_DEFAULT (400*24*60*60)  /* [sec] */
-#endif  /* #ifndef EXPIRE_DEFAULT */
-#ifndef BACKUP_DEFAULT
-#define BACKUP_DEFAULT   (3*24*60*60)  /* [sec] */
-#endif  /* #ifndef BACKUP_DEFAULT */
 #ifndef LOADBUFFER_SIZE
 #define LOADBUFFER_SIZE (16*1024)  /* [byte] */
 #endif  /* #ifndef LOADBUFFER_SIZE */

@@ -1,6 +1,6 @@
-/* common.c - Last modified: 23-Feb-2023 (kobayasy)
+/* common.c - Last modified: 29-Mar-2023 (kobayasy)
  *
- * Copyright (c) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -22,6 +22,10 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <limits.h>
 #include <string.h>

@@ -15,16 +15,16 @@
 <img src="psync.png" alt="pSync" align="right">
 
 [pSync] is an open-source cloud storage.
-Securely and speedy synchronize your files by authenticate, encrypt and compress with [OpenSSH].
-So for this to work, you must be able to login to the sync-host with [OpenSSH].
+Securely and speedy synchronize your files by authenticate, encrypt and compress with SSH.
+So for this to work, you must be able to login to the sync-host with SSH.
 
 ## Installation
 This work is required for each sync-host include local-host.
 1. Do the following to build and install.
 ```
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.30/psync-2.30.tar.gz
-tar xzf psync-2.30.tar.gz
-cd psync-2.30
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/2.31/psync-2.31.tar.gz
+tar xzf psync-2.31.tar.gz
+cd psync-2.31
 ./configure --prefix=$HOME
 make install
 
@@ -54,4 +54,3 @@ psync guest@example.com
 ```
 
 [pSync]: https://github.com/kobayasy/pSync
-[OpenSSH]: https://www.openssh.com
