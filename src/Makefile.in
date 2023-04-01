@@ -74,6 +74,7 @@ clean :
 distclean : clean
 	$(RM) config.log config.status config.cache
 	$(RM) Makefile config.h ja/psync.1 ja/psync.conf.5
+	find . -type d -empty -delete
 
 install : install-bin install-man1ja install-man5ja
 
