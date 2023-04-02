@@ -74,7 +74,7 @@ clean :
 distclean : clean
 	$(RM) config.log config.status config.cache
 	$(RM) config.h ja/psync.1 ja/psync.conf.5
-	test -n '$(shell ls ja)' || rmdir ja
+	test -n "`ls ja`" || rmdir ja
 	$(RM) Makefile
 
 install : install-bin install-man1ja install-man5ja
