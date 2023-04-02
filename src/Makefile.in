@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 01-Apr-2023 (kobayasy)
+# Makefile.in - Last modified: 02-Apr-2023 (kobayasy)
 #
 # Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -73,8 +73,9 @@ clean :
 
 distclean : clean
 	$(RM) config.log config.status config.cache
-	$(RM) Makefile config.h ja/psync.1 ja/psync.conf.5
-	find . -type d -empty -delete
+	$(RM) config.h ja/psync.1 ja/psync.conf.5
+	test -n '$(shell ls ja)' || rmdir ja
+	$(RM) Makefile
 
 install : install-bin install-man1ja install-man5ja
 
