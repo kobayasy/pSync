@@ -1,6 +1,6 @@
-/* info.c - Last modified: 29-Mar-2023 (kobayasy)
+/* info.c - Last modified: 03-Feb-2024 (kobayasy)
  *
- * Copyright (C) 2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2023-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -28,15 +28,12 @@
 #endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <limits.h>
-#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#ifdef HAVE_TGETENT
-#include <termcap.h>
-#endif  /* #ifdef HAVE_TGETENT */
+#include "tpbar.h"
 #include "info.h"
 
 static const char *strmes(int status) {
@@ -106,126 +103,6 @@ static char *strfnum(char *str, size_t length, intmax_t num) {
 }
 
 typedef struct {
-    char *up;
-    int co;
-    char *bar;
-    struct {
-        int cur;
-        int min, max;
-    } row;
-#ifdef HAVE_TGETENT
-    char buffer[1024];
-#endif  /* #ifdef HAVE_TGETENT */
-} TENT;
-
-static void tinit(TENT *tent) {
-#ifdef HAVE_TGETENT
-    char ent[1024], *s;
-#endif  /* #ifdef HAVE_TGETENT */
-
-    tent->up = NULL;
-    tent->co = -1;
-    tent->bar = NULL;
-    tent->row.cur = 0;
-    tent->row.min = INT_MAX;
-    tent->row.max = INT_MIN;
-#ifdef HAVE_TGETENT
-    s = getenv("TERM");
-    if (s == NULL)
-        goto error;
-    if (tgetent(ent, s) != 1)
-        goto error;
-    tent->up = UP;
-    tent->co = tgetnum("co");
-    s = tent->buffer;
-    if (tgetstr("mr", &s) == NULL)
-        goto error;
-    --s;
-    s += sprintf(s, "%%.*s");
-    if (tgetstr("me", &s) == NULL)
-        goto error;
-    --s;
-    s += sprintf(s, "%%s");
-    tent->bar = tent->buffer;
-error:
-    ;
-#endif  /* #ifdef HAVE_TGETENT */
-}
-
-static int tgetrow(int row, TENT *tent) {
-    switch (row) {
-    case INT_MIN:
-        row = tent->row.min == INT_MAX ? 0 : tent->row.min - 1;
-        break;
-    case INT_MAX:
-        row = tent->row.max == INT_MIN ? 0 : tent->row.max + 1;
-        break;
-    default:
-        row += tent->row.cur;
-    }
-    return row;
-}
-
-static int tsetrow(char *str, int row, TENT *tent) {
-    int length = 0;
-    char *s;
-    int n;
-
-    switch (row) {
-    case INT_MAX:
-    case INT_MIN:
-        row = tgetrow(row, tent);
-        break;
-    }
-    row -= tent->row.cur;
-    s = str;
-    if (row > 0) {
-        memset(s, '\n', row);
-        length += row, s += row;
-        *s = 0;
-        tent->row.cur += row;
-    }
-    else {
-        *s++ = '\r', ++length;
-        if (tent->up != NULL && row < 0) {
-            do {
-                n = sprintf(s, "%s", tent->up);
-                length += n, s += n;
-                --tent->row.cur;
-            } while (++row < 0);
-        }
-    }
-    if (tent->row.cur < tent->row.min)
-        tent->row.min = tent->row.cur;
-    if (tent->row.cur > tent->row.max)
-        tent->row.max = tent->row.cur;
-    return length;
-}
-
-static int tbar(char *str, intmax_t current, intmax_t goal, TENT *tent,
-                const char *format, ... ) {
-    int length = -1;
-    va_list ap;
-    unsigned int n;
-    char *s;
-
-    va_start(ap, format);
-    length = vsprintf(str, format, ap);
-    va_end(ap);
-    if (length < 0 || tent->bar == NULL)
-        n = 0;
-    else if (current < goal)
-        n = current * length / goal;
-    else
-        n = length;
-    if (n > 0 && (s = strdup(str)) != NULL) {
-        length = sprintf(str, tent->bar, n, s, s + n);
-        free(s);
-    }
-    return length;
-}
-
-typedef struct {
     int sid;
     int row;
     char name[1024];
@@ -240,17 +117,17 @@ typedef struct {
 struct {
     int sid[2];
     PROGRESS progress[2];
-    TENT tent;
+    TPBAR tpbar;
     size_t namelen;
 } g;
 
 void info_init(size_t namelen) {
     g.sid[0] = 0, g.sid[1] = 0;
     g.progress[0].sid = INT_MIN, g.progress[1].sid = INT_MIN;
-    tinit(&g.tent);
+    tpbar_init(&g.tpbar);
     g.namelen = namelen;
-    if (g.tent.co < g.namelen + 1+27+1)
-        g.tent.up = NULL;
+    if (g.tpbar.co < g.namelen + 1+27+1)
+        g.tpbar.up = NULL;
 }
 
 void info_print(unsigned int host, const char *line) {
@@ -277,7 +154,7 @@ void info_print(unsigned int host, const char *line) {
     case '[':
         if (progress->sid != g.sid[host]) {
             progress->sid = g.sid[host];
-            progress->row = tgetrow(INT_MAX, &g.tent);
+            progress->row = tpbar_getrow(INT_MAX, &g.tpbar);
             strcpy(progress->name, line);
             memset(progress->host, 0, sizeof(progress->host));
             update = 1;
@@ -287,31 +164,31 @@ void info_print(unsigned int host, const char *line) {
         ++g.sid[host];
         break;
     case 'S':
-        if (g.tent.up != NULL) {
+        if (g.tpbar.up != NULL) {
             progress->host[host].filescan = strtoll(line, NULL, 10);
             update = 2;
         }
         break;
     case 'U':
-        if (g.tent.up != NULL) {
+        if (g.tpbar.up != NULL) {
             progress->host[host].upload = strtoll(line, NULL, 10);
             update = 3;
         }
         break;
     case 'D':
-        if (g.tent.up != NULL) {
+        if (g.tpbar.up != NULL) {
             progress->host[host].downloaded = strtoll(line, NULL, 10);
             update = 3;
         }
         break;
     case 'R':
-        if (g.tent.up != NULL) {
+        if (g.tpbar.up != NULL) {
             progress->host[host].fileremove = strtoll(line, NULL, 10);
             update = 4;
         }
         break;
     case 'C':
-        if (g.tent.up != NULL) {
+        if (g.tpbar.up != NULL) {
             progress->host[host].filecopy = strtoll(line, NULL, 10);
             update = 4;
         }
@@ -320,34 +197,34 @@ void info_print(unsigned int host, const char *line) {
     switch (update) {
     case -1:
         s = buffer;
-        s += tsetrow(s, INT_MAX, &g.tent);
+        s += tpbar_setrow(s, INT_MAX, &g.tpbar);
         s += sprintf(s, "%s", line);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case -2:
         s = buffer;
-        s += tsetrow(s, INT_MAX, &g.tent);
+        s += tpbar_setrow(s, INT_MAX, &g.tpbar);
         s += sprintf(s, "%s%s", hostname[host], line);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case -3:
         s = buffer;
-        s += tsetrow(s, INT_MAX, &g.tent);
+        s += tpbar_setrow(s, INT_MAX, &g.tpbar);
         s += sprintf(s, "%sError - %s", hostname[host], line);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  1:
         s = buffer;
-        s += tsetrow(s, progress->row, &g.tent);
+        s += tpbar_setrow(s, progress->row, &g.tpbar);
         s += sprintf(s, "%s", progress->name);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  2:
         s = buffer;
-        s += tsetrow(s, progress->row, &g.tent);
+        s += tpbar_setrow(s, progress->row, &g.tpbar);
         s += sprintf(s, "%-*s ", (int)g.namelen, progress->name);
-        s += tbar(s, 0, 1, &g.tent, "[%24jd ]",
-                  progress->host[0].filescan + progress->host[1].filescan );
+        s += tpbar_printf(s, 0, 1, &g.tpbar, "[%24jd ]",
+                          progress->host[0].filescan + progress->host[1].filescan );
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  3:
@@ -362,9 +239,9 @@ void info_print(unsigned int host, const char *line) {
         else
             *buffer2 = 0;
         s = buffer;
-        s += tsetrow(s, progress->row, &g.tent);
+        s += tpbar_setrow(s, progress->row, &g.tpbar);
         s += sprintf(s, "%-*s ", (int)g.namelen, progress->name);
-        s += tbar(s, n1, n2, &g.tent, "[%11s /%11s ]", buffer1, buffer2);
+        s += tpbar_printf(s, n1, n2, &g.tpbar, "[%11s /%11s ]", buffer1, buffer2);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  4:
@@ -379,9 +256,9 @@ void info_print(unsigned int host, const char *line) {
         else
             *buffer2 = 0;
         s = buffer;
-        s += tsetrow(s, progress->row, &g.tent);
+        s += tpbar_setrow(s, progress->row, &g.tpbar);
         s += sprintf(s, "%-*s ", (int)g.namelen, progress->name);
-        s += tbar(s, 1, 1, &g.tent, "[%11s :%11s ]", buffer1, buffer2);
+        s += tpbar_printf(s, 1, 1, &g.tpbar, "[%11s :%11s ]", buffer1, buffer2);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     }

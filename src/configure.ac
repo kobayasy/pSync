@@ -1,6 +1,6 @@
-# configure.ac - Last modified: 02-Apr-2023 (kobayasy)
+# configure.ac - Last modified: 03-Feb-2024 (kobayasy)
 #
-# Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+# Copyright (C) 2018-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -23,10 +23,16 @@
 # SOFTWARE.
 
 AC_PREREQ(2.69)
-AC_INIT([pSync], [2.32], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
-AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
+AC_INIT([pSync], [2.33], [kobayasy@kobayasy.com], [psync], [http://kobayasy.com/psync/])
+AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
+
+AC_SUBST([CONFFILE], ['~/.psync.conf'])
+AC_SUBST([BACKUP], ['3'])
+AC_SUBST([EXPIRE], ['400'])
+AC_SUBST([SSH], ['ssh'])
+AC_SUBST([SSHPORT], ['22'])
 
 AC_DEFUN([MY_ARG_ENABLE],
    [AC_ARG_ENABLE([$1], [AS_HELP_STRING([--$2-$1], [$3])],
@@ -43,12 +49,6 @@ AC_DEFUN([MY_ARG_WITH],
            [AC_MSG_WARN([invalid option: --with-$1=$withval])
             AS_UNSET([withval]) ] )],
        [AS_UNSET([withval])] )] )
-
-AC_SUBST([CONFFILE], ['~/.psync.conf'])
-AC_SUBST([BACKUP], ['3'])
-AC_SUBST([EXPIRE], ['400'])
-AC_SUBST([SSH], ['ssh'])
-AC_SUBST([SSHPORT], ['22'])
 
 AC_PROG_MAKE_SET
 AC_PROG_CC
