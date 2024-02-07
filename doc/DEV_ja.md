@@ -16,23 +16,21 @@
 ## 配布ファイル
 |ファイル名|内容|
 ---|---
-|README.txt|インストール手順と簡単な使い方説明|
-|psync.{c,h}|ファイル同期|
-|psync_psp1.{c,h}|通信プロトコル, ファイル同期起動|
-|main.c|設定ファイル解析, 引数解析, 通信プロトコル起動|
-|popen3.{c,h}|プロセス起動, プロセス間通信|
-|progress.{c,h}|進捗通知|
-|tpbar.{c,h}|プロブレスバー表示|
-|info.{c,h}|進捗表示|
-|common.{c,h}|エラー判定/分岐, 中断判定/分岐, 数値データ[デ]シリアライザ, リスト処理|
+|[README.txt](../src/README.txt)|インストール手順と簡単な使い方説明|
+|[psync.h](../src/psync.h)<br>[psync.c](../src/psync.c)|ファイル同期|
+|[psync_psp1.h](../src/psync_psp1.h)<br>[psync_psp1.c](../src/psync_psp1.c)|通信プロトコル, ファイル同期起動|
+|[main.c](../src/main.c)|設定ファイル解析, 引数解析, 通信プロトコル起動|
+|[popen3.h](../src/popen3.h)<br>[popen3.c](../src/popen3.c)|プロセス起動, プロセス間通信|
+|[progress.h](../src/progress.h)<br>[progress.c](../src/progress.c)|進捗通知|
+|[info.h](../src/info.h)<br>[info.c](../src/info.c)|進捗表示|
+|[tpbar.h](../src/tpbar.h)<br>[tpbar.c](../src/tpbar.c)|プロブレスバー表示|
+|[common.h](../src/common.h)<br>[common.c](../src/common.c)|エラー判定/分岐, 中断判定/分岐, 数値データ[デ]シリアライザ, リスト処理|
 |ja/|日本語manマニュアル|
-|　psync.1.in|　psync.1 の生成元|
-|　psync.conf.5.in|　psync.conf.5 の生成元|
-|Makefile.in|Makefile の生成元|
-|configure.ac|config.h.in と configure, conf/ の生成元|
-|config.h.in|autoreconf -i 実行で configure.ac から自動生成される|
-|configure|(同上)|
-|conf/|(同上)|
+|　[psync.1.in](../src/ja/psync.1.in)|　psync.1 の生成元|
+|　[psync.conf.5.in](../src/ja/psync.conf.5.in)|　psync.conf.5 の生成元|
+|[Makefile.in](../src/Makefile.in)|Makefile の生成元|
+|[configure.ac](../src/configure.ac)|config.h.in と configure, conf/ の生成元|
+|config.h.in<br>configure<br>conf/|autoreconf -i 実行で configure.ac から自動生成される|
 
 ## 通信プロトコル
 ![pSp1 protocol](psp.svg)
