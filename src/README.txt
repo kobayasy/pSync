@@ -1,4 +1,4 @@
-pSync is an open-source cloud storage.
+pSync is an open source cloud file sharing system.
 Securely and speedy synchronize your files by authenticate, encrypt and compress with SSH.
 So for this to work, you must be able to login to the sync-host with SSH.
 

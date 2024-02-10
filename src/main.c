@@ -1,6 +1,6 @@
-/* main.c - Last modified: 29-Mar-2023 (kobayasy)
+/* main.c - Last modified: 10-Feb-2024 (kobayasy)
  *
- * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -62,7 +62,6 @@
 #define SSHPORT 22
 #endif  /* #ifndef SSHPORT */
 
-#define ERROR_HELP    3
 #define ERROR_ENVS (-26)
 #define ERROR_CONF (-27)
 #define ERROR_ARGS (-28)
@@ -415,6 +414,10 @@ error:
 }
 
 typedef struct {
+    enum {
+        RUN=0,
+        USAGE
+    } command;
     PSYNC_MODE mode;
     char *hostname;
     bool verbose;
@@ -435,10 +438,8 @@ static int get_opts(char *argv[], OPTS *opts) {
                 goto error;
             case '-':
                 ++s;
-                if (!strcmp(s, "help")) {
-                    status = ERROR_HELP;
-                    goto error;
-                }
+                if (!strcmp(s, "help"))
+                    opts->command = USAGE;
                 else if (!strcmp(s, "remote"))
                     opts->mode = PSYNC_SLAVE;
                 else if (!strcmp(s, "sync"))
@@ -491,30 +492,36 @@ static int get_opts(char *argv[], OPTS *opts) {
             }
             opts->hostname = *argv;
         }
-    switch (opts->mode) {
-    case PSYNC_MASTER:
-    case PSYNC_MASTER_PUT:
-    case PSYNC_MASTER_GET:
-        if (opts->hostname == NULL) {
-            fprintf(stderr, "Error: HOST is required\n");
-            status = ERROR_ARGS;
-            goto error;
+    switch (opts->command) {
+    case RUN:
+        switch (opts->mode) {
+        case PSYNC_MASTER:
+        case PSYNC_MASTER_PUT:
+        case PSYNC_MASTER_GET:
+            if (opts->hostname == NULL) {
+                fprintf(stderr, "Error: HOST is required\n");
+                status = ERROR_ARGS;
+                goto error;
+            }
+            break;
+        case PSYNC_SLAVE:
+        default:
+            if (opts->hostname != NULL) {
+                fprintf(stderr, "Error: HOST is not required\n");
+                status = ERROR_ARGS;
+                goto error;
+            }
         }
         break;
-    case PSYNC_SLAVE:
-    default:
-        if (opts->hostname != NULL) {
-            fprintf(stderr, "Error: HOST is not required\n");
-            status = ERROR_ARGS;
-            goto error;
-        }
     }
     status = 0;
 error:
     return status;
 }
 
-static void usage(FILE *fp) {
+static int usage(FILE *fp) {
+    int status = INT_MIN;
+
     fprintf(fp, PACKAGE_STRING" (protocol %c%c%c%u)\n"
                 "\n", PSYNC_PROTID, PSYNC_PROTID >> 8, PSYNC_PROTID >> 16, PSYNC_PROTID >> 24 );
     fprintf(fp, "Usage: "PACKAGE_TARNAME" [--sync] [-v|-q] [USER@]HOST[#PORT]\n"
@@ -539,12 +546,15 @@ static void usage(FILE *fp) {
     fprintf(fp, "subcommand\n"
                 "  --help         show this help\n"
                 "\n" );
+    status = 0;
+    return status;
 }
 
 int main(int argc, char *argv[]) {
     int status = INT_MIN;
     PSP *psp = NULL;
     OPTS opts = {
+        .command = RUN,
         .mode = PSYNC_MASTER,
         .verbose = true,
         .hostname = NULL
@@ -555,36 +565,40 @@ int main(int argc, char *argv[]) {
     if (s == NULL) {
         fprintf(stderr, "Error: $HOME is not set.\n");
         status = ERROR_ENVS;
-        goto run;
+        goto error;
     }
     if (chdir(s) == -1) {
         fprintf(stderr, "Error: Can not change diractory to %s\n", s);
         status = ERROR_ENVS;
-        goto run;
+        goto error;
     }
     psp = psp_new(&priv.stop);
     if (psp == NULL) {
         fprintf(stderr, "Error: Out of memory.\n");
         status = ERROR_MEMORY;
-        goto run;
+        goto error;
     }
     status = get_config(CONFFILE, psp);
     if (ISERR(status))
-        goto run;
+        goto error;
     priv.namelen = status;
     status = get_opts(argv, &opts);
-run:
-    switch (status) {
-    case 0:
+    if (ISERR(status))
+        goto error;
+    switch (opts.command) {
+    case RUN:
         status = run(opts.mode, psp, opts.verbose, opts.hostname);
-        if (status != ERROR_ARGS)
+        switch (status) {
+        case ERROR_ARGS:
+            fprintf(stderr, "Error: PORT is invalid.\n");
             break;
-        fprintf(stderr, "Error: PORT is invalid.\n");
+        }
+        break;
+    case USAGE:
     default:
-        if (ISERR(status))
-            fputc('\n', stdout);
-        usage(stdout);
+        status = usage(stdout);
     }
+error:
     if (psp != NULL)
         psp_free(psp);
     if (ISERR(status))

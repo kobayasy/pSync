@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 03-Feb-2024 (kobayasy)
+# Makefile.in - Last modified: 10-Feb-2024 (kobayasy)
 #
 # Copyright (C) 2018-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -36,11 +36,7 @@ datarootdir = @datarootdir@
 mandir = @mandir@
 
 CC = @CC@
-CFLAGS  = @CFLAGS@
-#CFLAGS += -Wno-shift-count-overflow
-#CFLAGS += -Wno-tautological-constant-out-of-range-compare
-#CFLAGS += -Wno-unused-result
-#CFLAGS += -Wno-format-truncation
+CFLAGS = @CFLAGS@
 DEFS = @DEFS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
