@@ -2,9 +2,9 @@
 |
 [使い方](#使い方)
 *|*
-[使い方のヒント](doc/NOTE_ja.md)
-*|*
 [技術資料](doc/DEV_ja.md)
+*|*
+[使い方のヒント](doc/NOTE_ja.md)
 *|*
 [英語(English)](README_en.md)
 
