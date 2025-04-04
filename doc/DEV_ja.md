@@ -38,7 +38,7 @@
 ![pSp1 protocol](psp.svg)
 
 ## ファイルの同期方向決定アルゴリズム
-![pSp1 protocol](SyncDirAlg.svg)
+![psync mode](psyncMode.svg)
 
 ## ファイル同期関数の使い方
 * 使い方は簡単。
