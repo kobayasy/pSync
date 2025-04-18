@@ -1,5 +1,5 @@
 # .github/workflows/build-windows.yml
-# Last modified: 03-Feb-2024 (kobayasy)
+# Last modified: 18-Apr-2025 (kobayasy)
 
 name: Windows
 
@@ -7,6 +7,7 @@ on:
   push:
     branches:
     - master
+  workflow_dispatch:
 
 jobs:
   build:
