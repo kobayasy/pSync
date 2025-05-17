@@ -1,6 +1,6 @@
-/* psync_psp1.c - Last modified: 29-Mar-2023 (kobayasy)
+/* psync_psp1.c - Last modified: 17-May-2025 (kobayasy)
  *
- * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -112,6 +112,8 @@ static CLIST *add_config(const char *name, const char *dirname, PRIV *priv) {
     CLIST *config = NULL;
     int seek;
 
+    if (!*name)
+        goto error;
     LIST_SEEK_NEXT(priv->config, name, seek);
     if (!seek)
         goto error;
@@ -128,10 +130,14 @@ static CLIST *seek_config(const char *name, PRIV *priv) {
     CLIST *config = NULL;
     int seek;
 
-    LIST_SEEK_NEXT(priv->config, name, seek);
-    if (seek)
-        goto error;
-    config = priv->config;
+    if (!*name)
+        config = &priv->head;
+    else {
+        LIST_SEEK_NEXT(priv->config, name, seek);
+        if (seek)
+            goto error;
+        config = priv->config;
+    }
 error:
     return config;
 }

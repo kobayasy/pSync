@@ -4,6 +4,8 @@
 |
 [通信プロトコル](#通信プロトコル)
 |
+[設定ファイル構文](#設定ファイル構文)
+|
 [ファイルの同期方向決定アルゴリズム](#ファイルの同期方向決定アルゴリズム)
 |
 [進捗状況出力フォーマット](#進捗状況出力フォーマット)
@@ -21,12 +23,12 @@
 |ファイル名|内容|
 ---|---
 |[README.txt](../src/README.txt)|インストール手順と簡単な使い方説明|
-|[psync.h](../src/psync.h)<br>[psync.c](../src/psync.c)|[ファイル同期](#ファイル同期関数の使い方)|
+|[psync.h](../src/psync.h)<br>[psync.c](../src/psync.c)|[ファイル同期](#ファイル同期関数の使い方)([同期方向決定](#ファイルの同期方向決定アルゴリズム))|
 |[psync_psp1.h](../src/psync_psp1.h)<br>[psync_psp1.c](../src/psync_psp1.c)|[通信プロトコル](#通信プロトコル), ファイル同期起動|
-|[main.c](../src/main.c)|設定ファイル解析, 引数解析, 通信プロトコル起動|
+|[main.c](../src/main.c)|[設定ファイル解析](#設定ファイル構文), 引数解析, 通信プロトコル起動|
 |[popen3.h](../src/popen3.h)<br>[popen3.c](../src/popen3.c)|プロセス起動, プロセス間通信|
-|[progress.h](../src/progress.h)<br>[progress.c](../src/progress.c)|進捗通知|
-|[info.h](../src/info.h)<br>[info.c](../src/info.c)|進捗表示|
+|[progress.h](../src/progress.h)<br>[progress.c](../src/progress.c)|[進捗通知](#進捗状況出力フォーマット)|
+|[info.h](../src/info.h)<br>[info.c](../src/info.c)|[進捗表示](#進捗状況出力フォーマット)|
 |[tpbar.h](../src/tpbar.h)<br>[tpbar.c](../src/tpbar.c)|プロブレスバー表示|
 |[common.h](../src/common.h)<br>[common.c](../src/common.c)|エラー判定/分岐, 中断判定/分岐, 数値データ[デ]シリアライザ, リスト処理|
 |ja/|日本語manマニュアル|
@@ -38,6 +40,9 @@
 
 ## 通信プロトコル
 ![pSp1 protocol](psp.svg)
+
+## 設定ファイル構文
+![psync conf](psyncConf.svg)
 
 ## ファイルの同期方向決定アルゴリズム
 ![psync mode](psyncMode.svg)

@@ -1,6 +1,6 @@
-/* main.c - Last modified: 10-Feb-2024 (kobayasy)
+/* main.c - Last modified: 17-May-2025 (kobayasy)
  *
- * Copyright (C) 2018-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -319,18 +319,29 @@ error:
     return status;
 }
 
+static char *strtrim(char *str) {
+    char *s;
+
+    while (isspace(*str))
+        ++str;
+    if (*str) {
+        s = str + strlen(str);
+        while (isspace(*--s));
+        s[1] = 0;
+    }
+    return str;
+}
+
 #define CONFREM '#'
-#define CONFTOK " \t\r\n"
+#define CONFVAR '='
 static int get_config(const char *confname, PSP *psp) {
     int status = INT_MIN;
     size_t length = 0;
     FILE *fp = NULL;
+    PSP_CONFIG *head;
     unsigned int line;
     char buffer[1024];
-    PSP_CONFIG *config;
-    char *name;
-    unsigned int argc;
-    char *argv, *s;
+    char *name, *dirname, *s, *p;
     size_t l;
 
     fp = fopen(confname, "r");
@@ -339,71 +350,52 @@ static int get_config(const char *confname, PSP *psp) {
         status = ERROR_CONF;
         goto error;
     }
+    head = psp_config("", NULL, psp);
     line = 0;
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         ++line;
-        config = NULL, name = NULL;
-        argc = 0;
-        if ((argv = strchr(buffer, CONFREM)) != NULL)
-            *argv = 0;
-        for (argv = strtok(buffer, CONFTOK); argv != NULL; argv = strtok(NULL, CONFTOK))
-            switch (++argc) {
-            case 1:
-                if (!isalnum(*argv)) {
-                    fprintf(stderr, "Error: Line %u in \"~/%s\": Invarid parameter \"%s\".\n", line, confname, argv);
-                    status = ERROR_CONF;
-                    goto error;
-                }
-                name = argv;
-                l = strlen(name);
-                if (l > length)
-                    length = l;
-                break;
-            case 2:
-                if (name == NULL) {
-                    status = ERROR_SYSTEM;
-                    goto error;
-                }
-                config = psp_config(name, argv, psp);
-                if (config == NULL) {
-                    fprintf(stderr, "Error: Line %u in \"~/%s\": Redefined \"%s\".\n", line, confname, name);
-                    status = ERROR_CONF;
-                    goto error;
-                }
-                break;
-            case 3:
-                if (config == NULL) {
-                    status = ERROR_SYSTEM;
-                    goto error;
-                }
-                config->backup = strtoul(argv, &s, 10);
-                if (*s || !isdigit(*argv)) {
-                    fprintf(stderr, "Error: Line %u in \"~/%s\": Invarid parameter \"%s\".\n", line, confname, argv);
-                    status = ERROR_CONF;
-                    goto error;
-                }
-                break;
-            case 4:
-                if (config == NULL) {
-                    status = ERROR_SYSTEM;
-                    goto error;
-                }
-                config->expire = strtoul(argv, &s, 10);
-                if (*s || !isdigit(*argv)) {
-                    fprintf(stderr, "Error: Line %u in \"~/%s\": Invarid parameter \"%s\".\n", line, confname, argv);
-                    status = ERROR_CONF;
-                    goto error;
-                }
-                break;
-            default:
-                fprintf(stderr, "Error: Line %u in \"~/%s\": Too many parameters \"%s\".\n", line, confname, name);
+        if ((s = strchr(buffer, CONFREM)) != NULL)
+            *s = 0;
+        name = strtrim(buffer);
+        if (!*name)
+            continue;
+        s = name;
+        while (*++s && !isspace(*s));
+        if (*s)
+            *s++ = 0;
+        dirname = strtrim(s);
+        s = strchr(name, CONFVAR);
+        if (s != NULL) {
+            if (*dirname) {
+                fprintf(stderr, "Error: Line %u in \"~/%s\": Too many parameters \"%s\".\n", line, confname, dirname);
                 status = ERROR_CONF;
                 goto error;
             }
-        if (argc == 1) {
-            fprintf(stderr, "Error: Line %u in \"~/%s\": Too few parameters \"%s\".\n", line, confname, name);
-            status = ERROR_CONF;
-            goto error;
+            *s++ = 0, p = NULL;
+            if (!strcmp(name, "expire"))
+                head->expire = strtoul(s, &p, 10) * 60*60*24;
+            else if (!strcmp(name, "backup"))
+                head->backup = strtoul(s, &p, 10) * 60*60*24;
+            if (p == NULL || *p) {
+                fprintf(stderr, "Error: Line %u in \"~/%s\": Invarid parameter \"%s%c%s\".\n", line, confname, name, CONFVAR, s);
+                status = ERROR_CONF;
+                goto error;
+            }
+        }
+        else {
+            if (!*dirname) {
+                fprintf(stderr, "Error: Line %u in \"~/%s\": Too few parameters \"%s\".\n", line, confname, name);
+                status = ERROR_CONF;
+                goto error;
+            }
+            if (psp_config(name, dirname, psp) == NULL) {
+                fprintf(stderr, "Error: Line %u in \"~/%s\": Redefined \"%s\".\n", line, confname, name);
+                status = ERROR_CONF;
+                goto error;
+            }
+            l = strlen(name);
+            if (l > length)
+                length = l;
         }
     }
     status = length;
@@ -513,6 +505,8 @@ static int get_opts(char *argv[], OPTS *opts) {
             }
         }
         break;
+    default:
+        ;
     }
     status = 0;
 error:
