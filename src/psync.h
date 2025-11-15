@@ -1,6 +1,6 @@
-/* psync.h - Last modified: 29-Mar-2023 (kobayasy)
+/* psync.h - Last modified: 15-Nov-2025 (kobayasy)
  *
- * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -75,16 +75,9 @@ typedef struct {
     int info;
 } PSYNC;
 
-typedef enum {
-    PSYNC_SLAVE=0,
-    PSYNC_MASTER,
-    PSYNC_MASTER_PUT,
-    PSYNC_MASTER_GET
-} PSYNC_MODE;
-
 extern PSYNC *psync_new(const char *dirname,
                         volatile sig_atomic_t *stop );
 extern void psync_free(PSYNC *psync);
-extern int psync_run(PSYNC_MODE mode, PSYNC *psync);
+extern int psync_run(PSYNC *psync);
 
 #endif  /* #ifndef _INCLUDE_psync_h */

@@ -1,17 +1,15 @@
 pSync is an open source cloud file sharing system.
-Securely and speedy synchronize your files by authenticate, encrypt and compress with SSH.
-So for this to work, you must be able to login to the sync-host with SSH.
 
 Installation:
-This work is required for each sync-host include local-host.
-1. Do the following to build and install.
+This process is required for each sync host, including the local host.
+1. Run the following commands to build and install.
 ---
 ./configure --prefix=$HOME
 make install
 ---
-2. Add ~/bin in the PATH if not included.
-3. When using for the 1st time, do the following too.
-   For example, if the sync-directory is ~/pSync .
+2. Add ~/bin to your PATH if it's not already included.
+3. When using for the first time, perform the following initial setup.
+   For example, if your sync directory is ~/pSync:
 ---
 mkdir ~/pSync && chmod 700 ~/pSync
 cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
@@ -21,11 +19,11 @@ psync pSync
 ---
 
 Usage:
-1. Do the following to show usage.
+1. To show the usage instructions, run the following command.
 ---
 psync --help
 ---
-2. For example, when synchronizing with guest@example.com .
+2. For example, to synchronise with guest@example.com .
 ---
 psync guest@example.com
 ---

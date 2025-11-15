@@ -1,4 +1,4 @@
-/* psync_psp1.c - Last modified: 17-May-2025 (kobayasy)
+/* psync_psp.c - Last modified: 15-Nov-2025 (kobayasy)
  *
  * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -30,9 +30,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 #include "common.h"
 #include "psync.h"
-#include "psync_psp1.h"
+#include "psync_psp.h"
 
 typedef struct s_clist {
     struct s_clist *next, *prev;
@@ -71,6 +72,73 @@ error:
 
 static each_next(CLIST)
 
+static sets_next(CLIST)
+
+static int write_CLIST(CLIST *clist, int fd,
+                       volatile sig_atomic_t *stop ) {
+    int status = INT_MIN;
+    size_t length, n;
+
+    ONSTOP(stop, -1);
+    if (*clist->name) {
+        status = -1;
+        goto error;
+    }
+    for (clist = clist->next; *clist->name; clist = clist->next) {
+        ONSTOP(stop, -1);
+        n = length = strlen(clist->name);
+        WRITE_ONERR(n, fd, write_size, -1);
+        if (write_size(fd, clist->name, length) != length) {
+            status = -1;
+            goto error;
+        }
+    }
+    length = 0;
+    WRITE_ONERR(length, fd, write_size, -1);
+    status = 0;
+error:
+    return status;
+}
+
+static int read_CLIST(CLIST *clist, int fd,
+                      volatile sig_atomic_t *stop ) {
+    int status = INT_MIN;
+    size_t length;
+    char *name = NULL;
+
+    ONSTOP(stop, -1);
+    if (*clist->name) {
+        status = -1;
+        goto error;
+    }
+    READ_ONERR(length, fd, read_size, -1);
+    while (length > 0) {
+        ONSTOP(stop, -1);
+        name = malloc(length + 1);
+        if (name == NULL) {
+            status = -1;
+            goto error;
+        }
+        if (read_size(fd, name, length) != length) {
+            status = -1;
+            goto error;
+        }
+        name[length] = 0;
+        clist = add_CLIST(clist, name, "");
+        if (clist == NULL) {
+            status = -1;
+            goto error;
+        }
+        free(name), name = NULL;
+        READ_ONERR(length, fd, read_size, -1);
+    }
+    status = 0;
+error:
+    if (name != NULL)
+        free(name);
+    return status;
+}
+
 static int delete_func(CLIST *c, void *data) {
     int status = INT_MIN;
 
@@ -84,7 +152,8 @@ typedef struct {
     int fdin, fdout;
     int info;
     volatile sig_atomic_t *stop;
-    CLIST head, *config;
+    CLIST *config;
+    CLIST clocal, cremote;
 } PRIV;
 
 static PRIV *new_priv(volatile sig_atomic_t *stop) {
@@ -96,15 +165,17 @@ static PRIV *new_priv(volatile sig_atomic_t *stop) {
     priv->fdin = -1, priv->fdout = -1;
     priv->info = -1;
     priv->stop = stop;
-    priv->config = new_CLIST(&priv->head);
+    priv->config = new_CLIST(&priv->clocal);
     priv->config->expire = EXPIRE_DEFAULT;
     priv->config->backup = BACKUP_DEFAULT;
+    new_CLIST(&priv->cremote);
 error:
     return priv;
 }
 
 static void free_priv(PRIV *priv) {
-    each_next_CLIST(&priv->head, delete_func, NULL, NULL);
+    each_next_CLIST(&priv->clocal, delete_func, NULL, NULL);
+    each_next_CLIST(&priv->cremote, delete_func, NULL, NULL);
     free(priv);
 }
 
@@ -120,8 +191,8 @@ static CLIST *add_config(const char *name, const char *dirname, PRIV *priv) {
     config = add_CLIST(priv->config, name, dirname);
     if (config == NULL)
         goto error;
-    config->expire = priv->head.expire;
-    config->backup = priv->head.backup;
+    config->expire = priv->clocal.expire;
+    config->backup = priv->clocal.backup;
 error:
     return config;
 }
@@ -131,7 +202,7 @@ static CLIST *seek_config(const char *name, PRIV *priv) {
     int seek;
 
     if (!*name)
-        config = &priv->head;
+        config = &priv->clocal;
     else {
         LIST_SEEK_NEXT(priv->config, name, seek);
         if (seek)
@@ -157,22 +228,22 @@ error:
     return status;
 }
 
-static int run(PSYNC_MODE mode, PRIV *priv) {
+static int psync(PRIV *priv, CLIST *config) {
     int status = INT_MIN;
     PSYNC *psync = NULL;
-    int ack_local, ack_remote;
+    int ack_local, ack_remote, n;
 
-    psync = psync_new(priv->config->dirname, priv->stop);
-    ack_local = psync == NULL ? -1 : 0;
-    WRITE_ONERR(ack_local, priv->fdout, write_size, ERROR_PROTOCOL);
+    psync = psync_new(config->dirname, priv->stop);
+    n = ack_local = psync == NULL ? -1 : 0;
+    WRITE_ONERR(n, priv->fdout, write_size, ERROR_PROTOCOL);
     READ_ONERR(ack_remote, priv->fdin, read_size, ERROR_PROTOCOL);
     if (!ack_local) {
         if (!ack_remote) {
-            psync->expire = psync->t - priv->config->expire;
-            psync->backup = psync->t - priv->config->backup;
+            psync->expire = psync->t - config->expire;
+            psync->backup = psync->t - config->backup;
             psync->fdin = priv->fdin, psync->fdout = priv->fdout;
             psync->info = priv->info;
-            status = psync_run(mode, psync);
+            status = psync_run(psync);
         }
         else
             status = ERROR_NOTREADYREMOTE;
@@ -186,88 +257,73 @@ error:
     return status;
 }
 
-static int run_master(PSYNC_MODE mode, PRIV *priv) {
+static int psync_func(SETS sets, CLIST *clocal, CLIST *cremote, void *data) {
     int status = INT_MIN;
-    size_t length, n;
-    int ack;
+    PRIV *priv = data;
 
-    ONSTOP(priv->stop, ERROR_STOP);
-    ONERR(greeting(priv), ERROR_PROTOCOL);
-    for (priv->config = priv->head.next; *priv->config->name; priv->config = priv->config->next) {
-        ONSTOP(priv->stop, ERROR_STOP);
-        n = length = strlen(priv->config->name);
-        WRITE_ONERR(n, priv->fdout, write_size, ERROR_PROTOCOL);
-        if (write_size(priv->fdout, priv->config->name, length) != length) {
-            status = ERROR_PROTOCOL;
+    switch (sets) {
+    case SETS_1AND2:
+        if (priv->info != -1)
+            dprintf(priv->info, "[%s\n", clocal->name);
+        if (ISERR(status = psync(priv, clocal)))
             goto error;
+        if (priv->info != -1) {
+            if (status)
+                dprintf(priv->info, "!%+d\n", status);
+            dprintf(priv->info, "]\n");
         }
-        READ_ONERR(ack, priv->fdin, read_size, ERROR_PROTOCOL);
-        if (!ack) {
-            if (priv->info != -1)
-                dprintf(priv->info, "[%s\n", priv->config->name);
-            if (ISERR(status = run(mode, priv)))
-                goto error;
-            if (priv->info != -1) {
-                if (status)
-                    dprintf(priv->info, "!%+d\n", status);
-                dprintf(priv->info, "]\n");
-            }
-        }
+        break;
+    case SETS_1NOT2:
+        break;
+    case SETS_2NOT1:
+        break;
     }
-    length = 0;
-    WRITE_ONERR(length, priv->fdout, write_size, ERROR_PROTOCOL);
     status = 0;
 error:
-    if (priv->info != -1 && status)
-        dprintf(priv->info, "!%+d\n", status);
     return status;
 }
 
-static int run_slave(PSYNC_MODE mode, PRIV *priv) {
+typedef struct {
+    PRIV *priv;
+    int status;
+    pthread_t tid;
+} PARAM;
+
+static void *write_CLIST_thread(void *data) {
+    PARAM *param = data;
+
+    param->status = write_CLIST(&param->priv->clocal, param->priv->fdout, param->priv->stop);
+    return NULL;
+}
+
+static int run(PRIV *priv) {
     int status = INT_MIN;
-    size_t length;
-    char *name = NULL;
-    int seek;
-    int ack;
+    PARAM param = {
+        .priv   = priv,
+        .status = INT_MIN
+    };
 
     ONSTOP(priv->stop, ERROR_STOP);
     ONERR(greeting(priv), ERROR_PROTOCOL);
-    READ_ONERR(length, priv->fdin, read_size, ERROR_PROTOCOL);
-    while (length > 0) {
-        ONSTOP(priv->stop, ERROR_STOP);
-        name = malloc(length + 1);
-        if (name == NULL) {
-            status = ERROR_MEMORY;
-            goto error;
-        }
-        if (read_size(priv->fdin, name, length) != length) {
-            status = ERROR_PROTOCOL;
-            goto error;
-        }
-        name[length] = 0;
-        LIST_SEEK_NEXT(priv->config, name, seek);
-        free(name), name = NULL;
-        ack = seek ? -1 : 0;
-        WRITE_ONERR(ack, priv->fdout, write_size, ERROR_PROTOCOL);
-        if (!ack) {
-            if (priv->info != -1)
-                dprintf(priv->info, "[%s\n", priv->config->name);
-            if (ISERR(status = run(mode, priv)))
-                goto error;
-            if (priv->info != -1) {
-                if (status)
-                    dprintf(priv->info, "!%+d\n", status);
-                dprintf(priv->info, "]\n");
-            }
-        }
-        READ_ONERR(length, priv->fdin, read_size, ERROR_PROTOCOL);
+    if (pthread_create(&param.tid, NULL, write_CLIST_thread, &param) != 0) {
+        status = ERROR_SYSTEM;
+        goto error;
     }
+    status = read_CLIST(&priv->cremote, priv->fdin, priv->stop);
+    ONSTOP(priv->stop, ERROR_STOP);
+    ONERR(status, ERROR_SDNLD);
+    if (pthread_join(param.tid, NULL) != 0) {
+        status = ERROR_SYSTEM;
+        goto error;
+    }
+    ONSTOP(priv->stop, ERROR_STOP);
+    ONERR(param.status, ERROR_SUPLD);
+    status = sets_next_CLIST(&priv->clocal, &priv->cremote, psync_func, priv, priv->stop);
+    ONSTOP(priv->stop, ERROR_STOP);
+    ONERR(status, ERROR_SYSTEM);
+    each_next_CLIST(&priv->cremote, delete_func, NULL, NULL);
     status = 0;
 error:
-    if (name != NULL)
-        free(name);
-    if (priv->info != -1 && status)
-        dprintf(priv->info, "!%+d\n", status);
     return status;
 }
 
@@ -286,18 +342,6 @@ PSP_CONFIG *psp_config(const char *name, const char *dirname, PSP *psp) {
     return config != NULL ? (PSP_CONFIG *)&config->dirname : NULL;
 }
 
-int psp_run(PSYNC_MODE mode, PSP *psp) {
-    int (*func)(PSYNC_MODE mode, PRIV *priv);
-
-    switch (mode) {
-    case PSYNC_MASTER:
-    case PSYNC_MASTER_PUT:
-    case PSYNC_MASTER_GET:
-        func = run_master;
-        break;
-    case PSYNC_SLAVE:
-    default:
-        func = run_slave;
-    }
-    return func(mode, (PRIV *)psp);
+int psp_run(PSP *psp) {
+    return run((PRIV *)psp);
 }

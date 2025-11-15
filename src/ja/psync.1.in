@@ -1,5 +1,5 @@
 ./" @configure_input@
-./" psync.1.in - Last modified: 17-May-2025 (kobayasy)
+./" psync.1.in - Last modified: 15-Nov-2025 (kobayasy)
 ./"
 ./" Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 ./"
@@ -23,7 +23,7 @@
 ./" CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ./" SOFTWARE.
 ./"
-.Dd May 17, 2025
+.Dd Nov 15, 2025
 .Dt PSYNC 1
 .Os POSIX
 .Sh NAME
@@ -31,15 +31,6 @@ pSync
 .Nd ネットワーク双方向ファイル同期ツール
 .Sh SYNOPSIS
 .Nm psync
-.Op Fl Fl sync
-.Op Fl v Ns | Ns Fl q
-.Oo Ar USER Ns @ Oc Ns Ar HOST Ns Oo # Ns Ar PORT Oc
-.Nm
-.Fl Fl put
-.Op Fl v Ns | Ns Fl q
-.Oo Ar USER Ns @ Oc Ns Ar HOST Ns Oo # Ns Ar PORT Oc
-.Nm
-.Fl Fl get
 .Op Fl v Ns | Ns Fl q
 .Oo Ar USER Ns @ Oc Ns Ar HOST Ns Oo # Ns Ar PORT Oc
 .Nm
@@ -49,7 +40,7 @@ pSync
 で指定した相手とファイル同期を行う。
 設定ファイル
 .Pa @CONFFILE@
-で登録したディレクトリの内、同期元と相手の両方に存在する識別名が付いたディレクトリ内のファイルを同期対象とする。
+で登録したディレクトリの内、同期元と相手の両方に存在するラベル名が付いたディレクトリ内のファイルを同期対象とする。
 .Pp
 .Ar HOST
 で同期相手のホスト名を
@@ -100,19 +91,6 @@ pSync は同期相手側としてリモートで起動される場合も含め�
 自動で同期処理の完了を待つ事はしないので必要に応じて同期完了を待ってから再度実行をする。
 .Sh OPTIONS
 .Bl -tag -width Ds
-.It Fl s Ns , Fl Fl sync
-同期元と相手で双方向に同期する。
-このオプションはデフォルトで有効。
-.Fl Fl put Ns Po Fl s Pc , Fl Fl get Ns Po Fl g Pc
-とは排他関係に有り一番最後の指定が有効になる。
-.It Fl p Ns , Fl Fl put
-同期相手を同期元に一方向に同期する。
-.Fl Fl sync Ns Po Fl p Pc , Fl Fl get Ns Po Fl g Pc
-とは排他関係に有り一番最後の指定が有効になる。
-.It Fl g Ns , Fl Fl get
-同期元を同期相手に一方向に同期する。
-.Fl Fl sync Ns Po Fl s Pc , Fl Fl put Ns Po Fl p Pc
-とは排他関係に有り一番最後の指定が有効になる。
 .It Fl v Ns , Fl Fl verbose
 同期ファイルのアップロードとダウンロードの
 進捗情報
@@ -134,8 +112,8 @@ pSync は同期相手側としてリモートで起動される場合も含め�
 で進捗情報表示を有効にすると以下の6種類の情報がリアルタイムに表示される。
 .Bl -tag -width Ds
 .It Ar 認識名
-行の左端から始まる文字列は同期処理中の同期ディレクトリを示す識別名。
-識別名に付いては
+行の左端から始まる文字列は同期処理中の同期ディレクトリを示すラベル名。
+ラベル名に付いては
 .Xr psync.conf 5
 を参照。
 .It Bq \& Va 同期ファイル数 \&

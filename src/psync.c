@@ -1,6 +1,6 @@
-/* psync.c - Last modified: 29-Mar-2023 (kobayasy)
+/* psync.c - Last modified: 15-Nov-2025 (kobayasy)
  *
- * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -598,74 +598,6 @@ static int make_fsynced_func(SETS sets, FLIST *flocal, FLIST *fremote, void *dat
     return status;
 }
 
-static int make_fsynced_put_func(SETS sets, FLIST *flocal, FLIST *fremote, void *data) {
-    int status = INT_MIN;
-    PRIV *priv = data;
-
-    switch (sets) {
-    case SETS_1AND2:
-        flocal->st.flags |= fremote->st.flags;
-        if (flocal->st.revision != fremote->st.revision &&
-            flocal->st.mtime != fremote->st.mtime )
-            flocal->st.flags |= FST_UPLD;
-        LIST_DELETE(fremote);
-        free(fremote);
-        LIST_DELETE(flocal);
-        LIST_INSERT_PREV(flocal, &priv->fsynced);
-        break;
-    case SETS_1NOT2:
-        flocal->st.flags |= FST_UPLD;
-        LIST_DELETE(flocal);
-        LIST_INSERT_PREV(flocal, &priv->fsynced);
-        break;
-    case SETS_2NOT1:
-        fremote->st.flags |= FST_UPLD;
-        fremote->st.revision = priv->t;
-        fremote->st.mtime = 0;
-        fremote->st.mode = 0;
-        fremote->st.size = 0;
-        LIST_DELETE(fremote);
-        LIST_INSERT_PREV(fremote, &priv->fsynced);
-        break;
-    }
-    status = 0;
-    return status;
-}
-
-static int make_fsynced_get_func(SETS sets, FLIST *flocal, FLIST *fremote, void *data) {
-    int status = INT_MIN;
-    PRIV *priv = data;
-
-    switch (sets) {
-    case SETS_1AND2:
-        fremote->st.flags |= flocal->st.flags;
-        if (flocal->st.revision != fremote->st.revision &&
-            flocal->st.mtime != fremote->st.mtime )
-            fremote->st.flags |= FST_DNLD;
-        LIST_DELETE(flocal);
-        free(flocal);
-        LIST_DELETE(fremote);
-        LIST_INSERT_PREV(fremote, &priv->fsynced);
-        break;
-    case SETS_1NOT2:
-        flocal->st.flags |= FST_DNLD;
-        flocal->st.revision = priv->t;
-        flocal->st.mtime = 0;
-        flocal->st.mode = 0;
-        flocal->st.size = 0;
-        LIST_DELETE(flocal);
-        LIST_INSERT_PREV(flocal, &priv->fsynced);
-        break;
-    case SETS_2NOT1:
-        fremote->st.flags |= FST_DNLD;
-        LIST_DELETE(fremote);
-        LIST_INSERT_PREV(fremote, &priv->fsynced);
-        break;
-    }
-    status = 0;
-    return status;
-}
-
 static int preload(PRIV *priv) {
     int status = INT_MIN;
 #ifdef _INCLUDE_progress_h
@@ -1236,18 +1168,25 @@ typedef struct {
     PRIV *priv;
     int status;
     pthread_t tid;
-} LOAD_PARAM;
+} PARAM;
+
+static void *write_FLIST_thread(void *data) {
+    PARAM *param = data;
+
+    param->status = write_FLIST(true, &param->priv->flocal, param->priv->fdout, param->priv->stop);
+    return NULL;
+}
 
 static void *upload_thread(void *data) {
-    LOAD_PARAM *param = data;
+    PARAM *param = data;
 
     param->status = upload(param->priv);
     return NULL;
 }
 
-static int run(int (*func)(SETS sets, FLIST *f1, FLIST *f2, void *data), PRIV *priv) {
+static int run(PRIV *priv) {
     int status = INT_MIN;
-    LOAD_PARAM upload_param = {
+    PARAM param = {
         .priv   = priv,
         .status = INT_MIN
     };
@@ -1259,43 +1198,37 @@ static int run(int (*func)(SETS sets, FLIST *f1, FLIST *f2, void *data), PRIV *p
     status = sets_next_FLIST(&priv->flocal, &priv->fsynced, add_deleted_func, priv, priv->stop);
     ONSTOP(priv->stop, ERROR_STOP);
     ONERR(status, ERROR_SYSTEM);
-    if (func != NULL) {
-        status = read_FLIST(true, &priv->fremote, priv->fdin, priv->stop);
-        ONSTOP(priv->stop, ERROR_STOP);
-        ONERR(status, ERROR_SDNLD);
-        status = sets_next_FLIST(&priv->flocal, &priv->fremote, func, priv, priv->stop);
-        ONSTOP(priv->stop, ERROR_STOP);
-        ONERR(status, ERROR_SYSTEM);
-        status = write_FLIST(true, &priv->fsynced, priv->fdout, priv->stop);
-        ONSTOP(priv->stop, ERROR_STOP);
-        ONERR(status, ERROR_SUPLD);
+    if (pthread_create(&param.tid, NULL, write_FLIST_thread, &param) != 0) {
+        status = ERROR_SYSTEM;
+        goto error;
     }
-    else {
-        status = write_FLIST(true, &priv->flocal, priv->fdout, priv->stop);
-        ONSTOP(priv->stop, ERROR_STOP);
-        ONERR(status, ERROR_SUPLD);
-        status = each_next_FLIST(&priv->flocal, delete_func, NULL, priv->stop);
-        ONSTOP(priv->stop, ERROR_STOP);
-        ONERR(status, ERROR_SYSTEM);
-        status = read_FLIST(true, &priv->fsynced, priv->fdin, priv->stop);
-        ONSTOP(priv->stop, ERROR_STOP);
-        ONERR(status, ERROR_SDNLD);
+    status = read_FLIST(true, &priv->fremote, priv->fdin, priv->stop);
+    ONSTOP(priv->stop, ERROR_STOP);
+    ONERR(status, ERROR_SDNLD);
+    if (pthread_join(param.tid, NULL) != 0) {
+        status = ERROR_SYSTEM;
+        goto error;
     }
+    ONSTOP(priv->stop, ERROR_STOP);
+    ONERR(param.status, ERROR_SUPLD);
+    status = sets_next_FLIST(&priv->flocal, &priv->fremote, make_fsynced_func, priv, priv->stop);
+    ONSTOP(priv->stop, ERROR_STOP);
+    ONERR(status, ERROR_SYSTEM);
     if (ISERR(status = save_fsynced(priv)))
         goto error;
     if (ISERR(status = preload(priv)))
         goto error;
-    if (pthread_create(&upload_param.tid, NULL, upload_thread, &upload_param) != 0) {
+    if (pthread_create(&param.tid, NULL, upload_thread, &param) != 0) {
         status = ERROR_SYSTEM;
         goto error;
     }
     if (ISERR(status = download(priv)))
         goto error;
-    if (pthread_join(upload_param.tid, NULL) != 0) {
+    if (pthread_join(param.tid, NULL) != 0) {
         status = ERROR_SYSTEM;
         goto error;
     }
-    ONERR(upload_param.status, upload_param.status);
+    ONERR(param.status, param.status);
     if (ISERR(status = commit(priv)))
         goto error;
     if (ISERR(status = logging(priv)))
@@ -1316,22 +1249,6 @@ void psync_free(PSYNC *psync) {
     free_priv((PRIV *)psync);
 }
 
-int psync_run(PSYNC_MODE mode, PSYNC *psync) {
-    int (*func)(SETS sets, FLIST *f1, FLIST *f2, void *data);
-
-    switch (mode) {
-    case PSYNC_MASTER:
-        func = make_fsynced_func;
-        break;
-    case PSYNC_MASTER_PUT:
-        func = make_fsynced_put_func;
-        break;
-    case PSYNC_MASTER_GET:
-        func = make_fsynced_get_func;
-        break;
-    case PSYNC_SLAVE:
-    default:
-        func = NULL;
-    }
-    return run(func, (PRIV *)psync);
+int psync_run(PSYNC *psync) {
+    return run((PRIV *)psync);
 }

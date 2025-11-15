@@ -1,4 +1,4 @@
-/* main.c - Last modified: 17-May-2025 (kobayasy)
+/* main.c - Last modified: 15-Nov-2025 (kobayasy)
  *
  * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -39,7 +39,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include "common.h"
-#include "psync_psp1.h"
+#include "psync_psp.h"
 #include "popen3.h"
 #include "info.h"
 
@@ -197,7 +197,6 @@ static void sighandler(int signo) {
 }
 
 typedef struct {
-    PSYNC_MODE mode;
     PSP *psp;
     bool verbose;
 } RUN_PARAM;
@@ -226,7 +225,7 @@ static int run_local(int fdin, int fdout, int info, pid_t pid, void *data) {
     }
     sigactinit(&oldact);
     ONERR(sigactset(sighandler, &oldact), ERROR_SYSTEM);
-    status = psp_run(param->mode, param->psp);
+    status = psp_run(param->psp);
     sigactreset(&oldact);
     if (param->verbose) {
         close(info_pipe[1]), info_pipe[1] = -1;
@@ -256,7 +255,7 @@ static int run_remote(int fdin, int fdout, int info, pid_t pid, void *data) {
         param->psp->info = info;
     sigactinit(&oldact);
     ONERR(sigactset(sighandler, &oldact), ERROR_SYSTEM);
-    status = psp_run(param->mode, param->psp);
+    status = psp_run(param->psp);
     sigactreset(&oldact);
 error:
     if (pid != 0)
@@ -265,10 +264,9 @@ error:
 }
 
 #define ARGVTOK " \t\r\n"
-static int run(PSYNC_MODE mode, PSP *psp, bool verbose, char *hostname) {
+static int run(PSP *psp, bool verbose, char *hostname) {
     int status = INT_MIN;
     RUN_PARAM param = {
-        .mode = mode,
         .psp = psp,
         .verbose = verbose
     };
@@ -410,13 +408,13 @@ typedef struct {
         RUN=0,
         USAGE
     } command;
-    PSYNC_MODE mode;
     char *hostname;
     bool verbose;
 } OPTS;
 
 static int get_opts(char *argv[], OPTS *opts) {
     int status = INT_MIN;
+    bool remote = false;
     char *s;
 
     while (*++argv != NULL)
@@ -433,13 +431,7 @@ static int get_opts(char *argv[], OPTS *opts) {
                 if (!strcmp(s, "help"))
                     opts->command = USAGE;
                 else if (!strcmp(s, "remote"))
-                    opts->mode = PSYNC_SLAVE;
-                else if (!strcmp(s, "sync"))
-                    opts->mode = PSYNC_MASTER;
-                else if (!strcmp(s, "put"))
-                    opts->mode = PSYNC_MASTER_PUT;
-                else if (!strcmp(s, "get"))
-                    opts->mode = PSYNC_MASTER_GET;
+                    remote = true;
                 else if (!strcmp(s, "verbose"))
                     opts->verbose = true;
                 else if (!strcmp(s, "quiet"))
@@ -453,15 +445,6 @@ static int get_opts(char *argv[], OPTS *opts) {
             default:
                 do {
                     switch (*s) {
-                    case 's':
-                        opts->mode = PSYNC_MASTER;
-                        break;
-                    case 'p':
-                        opts->mode = PSYNC_MASTER_PUT;
-                        break;
-                    case 'g':
-                        opts->mode = PSYNC_MASTER_GET;
-                        break;
                     case 'v':
                         opts->verbose = true;
                         break;
@@ -486,20 +469,16 @@ static int get_opts(char *argv[], OPTS *opts) {
         }
     switch (opts->command) {
     case RUN:
-        switch (opts->mode) {
-        case PSYNC_MASTER:
-        case PSYNC_MASTER_PUT:
-        case PSYNC_MASTER_GET:
-            if (opts->hostname == NULL) {
-                fprintf(stderr, "Error: HOST is required\n");
+        if (remote) {
+            if (opts->hostname != NULL) {
+                fprintf(stderr, "Error: HOST is not required\n");
                 status = ERROR_ARGS;
                 goto error;
             }
-            break;
-        case PSYNC_SLAVE:
-        default:
-            if (opts->hostname != NULL) {
-                fprintf(stderr, "Error: HOST is not required\n");
+        }
+        else {
+            if (opts->hostname == NULL) {
+                fprintf(stderr, "Error: HOST is required\n");
                 status = ERROR_ARGS;
                 goto error;
             }
@@ -518,9 +497,7 @@ static int usage(FILE *fp) {
 
     fprintf(fp, PACKAGE_STRING" (protocol %c%c%c%u)\n"
                 "\n", PSYNC_PROTID, PSYNC_PROTID >> 8, PSYNC_PROTID >> 16, PSYNC_PROTID >> 24 );
-    fprintf(fp, "Usage: "PACKAGE_TARNAME" [--sync] [-v|-q] [USER@]HOST[#PORT]\n"
-                "       "PACKAGE_TARNAME" --put [-v|-q] [USER@]HOST[#PORT]\n"
-                "       "PACKAGE_TARNAME" --get [-v|-q] [USER@]HOST[#PORT]\n"
+    fprintf(fp, "Usage: "PACKAGE_TARNAME" [-v|-q] [USER@]HOST[#PORT]\n"
                 "       "PACKAGE_TARNAME" --help\n"
                 "\n" );
     fprintf(fp, "USER@HOST#PORT\n"
@@ -528,11 +505,6 @@ static int usage(FILE *fp) {
                 "  USER           username (default: current login user)\n"
                 "  PORT           SSH port (default: %u)\n"
                 "\n", SSHPORT );
-    fprintf(fp, "runmode\n"
-                "  -s, --sync     synchronous mode (default)\n"
-                "  -p, --put      oneway put mode\n"
-                "  -g, --get      oneway get mode\n"
-                "\n" );
     fprintf(fp, "options\n"
                 "  -v, --verbose  verbose mode (default)\n"
                 "  -q, --quiet    quiet mode\n"
@@ -549,7 +521,6 @@ int main(int argc, char *argv[]) {
     PSP *psp = NULL;
     OPTS opts = {
         .command = RUN,
-        .mode = PSYNC_MASTER,
         .verbose = true,
         .hostname = NULL
     };
@@ -581,7 +552,7 @@ int main(int argc, char *argv[]) {
         goto error;
     switch (opts.command) {
     case RUN:
-        status = run(opts.mode, psp, opts.verbose, opts.hostname);
+        status = run(psp, opts.verbose, opts.hostname);
         switch (status) {
         case ERROR_ARGS:
             fprintf(stderr, "Error: PORT is invalid.\n");

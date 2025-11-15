@@ -1,5 +1,5 @@
 ./" @configure_input@
-./" psync.conf.5.in - Last modified: 17-May-2025 (kobayasy)
+./" psync.conf.5.in - Last modified: 15-Nov-2025 (kobayasy)
 ./"
 ./" Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 ./"
@@ -23,7 +23,7 @@
 ./" CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ./" SOFTWARE.
 ./"
-.Dd May 17, 2025
+.Dd Nov 15, 2025
 .Dt PSYNC.CONF 5
 .Os POSIX
 .Sh NAME
@@ -38,12 +38,12 @@
 文字はそれ以降から行末までをコメントととして無視する。
 .Pp
 同期対象にするディレクトリ は
-.Ar 識別名
+.Ar ラベル名
 と
 .Ar パス名
 を空白文字で区切って1行で設定する。
 .Bl -tag -width Ds
-.It Ar 識別名
+.It Ar ラベル名
 ディレクトリの内容を示す任意な文字列。
 設定ファイル内で一意である事。
 空白文字と
@@ -143,14 +143,14 @@ C の a の削除と b の更新を A を経由してBに同期
 登録ディレクトリが1つだけの設定例
 .Pp
 .Bd -literal -offset indent
-#識別名 パス名
-psync   pSync
+#ラベル名 パス名
+psync     pSync
 .Ed
 .Pp
 同期ディレクトリ
 .Pa ~/pSync/
 を
-.Ar 識別名
+.Ar ラベル名
 psync で登録。
 .Ar バックアップ保持期間
 と
@@ -163,9 +163,9 @@ psync で登録。
 複数のディレクトリを登録する例
 .Pp
 .Bd -literal -offset indent
-#識別名 パス名        コメント文
-private pSync/Private #個人データ
-work    pSync/Work    #仕事のデータ
+#ラベル名 パス名        コメント文
+private   pSync/Private #個人データ
+work      pSync/Work    #仕事のデータ
 .Ed
 .Pp
 同期ディレクトリを個人データの
@@ -182,13 +182,13 @@ work    pSync/Work    #仕事のデータ
 を指定する例
 .Pp
 .Bd -literal -offset indent
-#識別名 パス名      コメント文
-private doc/private #個人データ
-backup=30           #バックアップ保持期間
-expire=1000         #削除履歴保持期間
-work    doc/work    #仕事のデータ
-backup=7            #バックアップ保持期間
-public  doc/public  #共有データ
+#ラベル名 パス名      コメント文
+private   doc/private #個人データ
+backup=30             #バックアップ保持期間
+expire=1000           #削除履歴保持期間
+work      doc/work    #仕事のデータ
+backup=7              #バックアップ保持期間
+public    doc/public  #共有データ
 .Ed
 .Pp
 この場合は同期ディレクトリ
@@ -208,7 +208,7 @@ public  doc/public  #共有データ
 .El
 .Pp
 例えば 2. の設定例と 3. の設定例のホスト間で同期を行った場合は両方共に存在する
-.Ar 識別名
+.Ar ラベル名
 は private と work なので private が示す 2. のホストのディレクトリ
 .Pa ~/pSync/Private/
 と 3. のホストの

@@ -1,6 +1,6 @@
-/* psync_psp1.h - Last modified: 29-Mar-2023 (kobayasy)
+/* psync_psp.h - Last modified: 15-Nov-2025 (kobayasy)
  *
- * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -23,14 +23,14 @@
  * SOFTWARE.
  */
 
-#ifndef _INCLUDE_psync_psp1_h
-#define _INCLUDE_psync_psp1_h
+#ifndef _INCLUDE_psync_psp_h
+#define _INCLUDE_psync_psp_h
 
 #include <signal.h>
 #include <time.h>
 #include "psync.h"
 
-#define PSYNC_PROTID 0x01705370  /* 'p', 'S', 'p', 1 */
+#define PSYNC_PROTID 0x03705370  /* 'p', 'S', 'p', 3 */
 
 #define ERROR_NOTREADYLOCAL  1
 #define ERROR_NOTREADYREMOTE 2
@@ -51,6 +51,6 @@ typedef struct {
 extern PSP *psp_new(volatile sig_atomic_t *stop);
 extern void psp_free(PSP *psp);
 extern PSP_CONFIG *psp_config(const char *name, const char *dirname, PSP *psp);
-extern int psp_run(PSYNC_MODE mode, PSP *psp);
+extern int psp_run(PSP *psp);
 
-#endif  /* #ifndef _INCLUDE_psync_psp1_h */
+#endif  /* #ifndef _INCLUDE_psync_psp_h */
