@@ -9,7 +9,7 @@
 | -- | --
 | [README.txt](../src/README.txt) | インストール手順と簡単な使い方説明
 | [psync.h](../src/psync.h)<br>[psync.c](../src/psync.c) | [ファイル同期](#ファイル同期関数の使い方)([同期方向決定](#ファイルの同期方向決定アルゴリズム))
-| [psync_psp1.h](../src/psync_psp1.h)<br>[psync_psp1.c](../src/psync_psp1.c) | [通信プロトコル](#通信プロトコル), ファイル同期起動
+| [psync_psp.h](../src/psync_psp.h)<br>[psync_psp.c](../src/psync_psp.c) | [通信プロトコル](#通信プロトコル), ファイル同期起動
 | [main.c](../src/main.c) | [設定ファイル解析](#設定ファイル構文), 引数解析, 通信プロトコル起動
 | [popen3.h](../src/popen3.h)<br>[popen3.c](../src/popen3.c) | プロセス起動, プロセス間通信
 | [progress.h](../src/progress.h)<br>[progress.c](../src/progress.c) | [進捗通知](#進捗状況出力フォーマット)
