@@ -13,8 +13,8 @@ make install
 ---
 mkdir ~/pSync && chmod 700 ~/pSync
 cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
-#ID   Directory
-psync pSync
+#Label Directory
+psync  pSync
 .
 ---
 

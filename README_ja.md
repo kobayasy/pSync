@@ -6,7 +6,7 @@
 
 <img src="psync.png" alt="pSync" align="right">
 
-### バージョン3.0リリース (15th of Nov., 2025)
+### バージョン3.1リリース (15th of Nov., 2025)
 - ファイルのメタ情報送受信を並列化し、高速化しました。
 - プロトコル変更により、バージョン2系統との互換性がなくなりました。
 	- バージョン2系統のサポートは終了しますので、お早めのバージョンアップをお願いします。
@@ -50,9 +50,9 @@
 この作業は、ローカルホストを含め、同期する全てのホストで必要です。
 1. 以下のコマンドでビルドとインストールを実行します。
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.0/psync-3.0.tar.gz
-tar xzf psync-3.0.tar.gz
-cd psync-3.0
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.1/psync-3.1.tar.gz
+tar xzf psync-3.1.tar.gz
+cd psync-3.1
 ./configure --prefix=$HOME
 make install
 
