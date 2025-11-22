@@ -1,5 +1,5 @@
 <!--
-DEV_ja.md - Last modified: 22-Nov-2025 (kobayasy)
+DEV_ja.md - Last modified: 23-Nov-2025 (kobayasy)
 -->
 
 [技術資料](#技術資料) [ [配布ファイル](#配布ファイル) | [通信プロトコル](#通信プロトコル) | [設定ファイル構文](#設定ファイル構文) | [ファイルの同期方向決定アルゴリズム](#ファイルの同期方向決定アルゴリズム) | [進捗状況出力フォーマット](#進捗状況出力フォーマット) | [ファイル同期関数の使い方](#ファイル同期関数の使い方) ] / [README](../README_ja.md)
@@ -19,7 +19,7 @@ DEV_ja.md - Last modified: 22-Nov-2025 (kobayasy)
 | [progress.h](../src/progress.h)<br>[progress.c](../src/progress.c) | [進捗通知](#進捗状況出力フォーマット)
 | [info.h](../src/info.h)<br>[info.c](../src/info.c) | [進捗表示](#進捗状況出力フォーマット)
 | [tpbar.h](../src/tpbar.h)<br>[tpbar.c](../src/tpbar.c) | プログレスバー表示
-| [common.h](../src/common.h)<br>[common.c](../src/common.c) | エラー判定/分岐, 中断判定/分岐, 数値データ[デ]シリアライザ, リスト処理
+| [common.h](../src/common.h)<br>[common.c](../src/common.c) | エラー判定/分岐, 中断判定/分岐, 数値データシリアライズ/デシリアライズ, リスト処理
 | ja/ | 日本語manマニュアル
 | &emsp;[psync.1.in](../src/ja/psync.1.in) | &emsp;psync.1 の生成元
 | &emsp;[psync.conf.5.in](../src/ja/psync.conf.5.in) | &emsp;psync.conf.5 の生成元
@@ -40,10 +40,10 @@ DEV_ja.md - Last modified: 22-Nov-2025 (kobayasy)
 ![psync info](psyncInfo.svg)
 
 ## ファイル同期関数の使い方
-使い方は簡単です。同期元と同期先のディレクトリに対して、それぞれ `psync_new()`、`psync_run()`、`psync_free()` を順番に呼び出すだけです。
-下記は、`~/dir1` と `~/dir2` 内のファイルを同期するサンプルコードです。説明のため、エラー処理、中断処理、進捗表示は省略しています。
-- `psync_run()` を呼び出す前に、同期元の `fdout` を同期先の `fdin` に、同期先の `fdout` を同期元の `fdin` に、それぞれファイルディスクリプタで接続します。`psync` コマンドはSSHの標準入出力で接続しますが、手段は問いません。この例ではパイプを使用しています。
-- `psync_run()` は、同期元と同期先の間でファイルデータをやり取りするために、並列で実行する必要があります。`psync` コマンドでは別のPCで並列実行しますが、手段は問いません。この例では pthread を使用しています。
+使い方は簡単です。同期元と同期先のディレクトリに対し、それぞれ `psync_new()`、`psync_run()`、`psync_free()` を順番に呼び出します。
+以下に、ディレクトリ `dir1` と `dir2` のファイルを同期するサンプルコードを示します。説明を簡潔にするため、エラー処理、中断処理、進捗表示は省略しています。
+- `psync_run()` を呼び出す前に、同期元と同期先の `fdout` と `fdin` を、互いに交差するようにファイルディスクリプタで接続します。`psync` コマンドではSSHの標準入出力を介して接続していますが、接続手段は問いません。この例ではパイプを使用しています。
+- `psync_run()` は、同期元と同期先でファイルデータを交換するため、並列実行する必要があります。`psync` コマンドでは別のPCで並列実行していますが、実行手段は問いません。この例では pthread を使用しています。
 ```c
 /* psync_example.c - ファイル同期関数の使い方サンプルコード
  */
@@ -100,7 +100,7 @@ gcc -pthread -o psync_example psync_example.c psync.c common.c progress.c
 
 ```
 以下にファイル同期の実行例を示します。
-実行すると、`~/dir1` と `~/dir2` の内容が同期され、同一になります。
+実行すると、ディレクトリ `dir1` と `dir2` の内容が同期され、同一になります。
 ```sh
 $ mkdir dir1 dir2
 $ echo foo > dir1/file1
@@ -170,3 +170,4 @@ qux
 quux
 $
 ```
+
