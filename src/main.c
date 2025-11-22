@@ -1,4 +1,4 @@
-/* main.c - Last modified: 15-Nov-2025 (kobayasy)
+/* main.c - Last modified: 22-Nov-2025 (kobayasy)
  *
  * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -123,7 +123,7 @@ static void *info_thread(void *data) {
                 ++n;
             }
     }
-    info_print(0, "!");
+    info_print(0, ".");
 error:
     return NULL;
 }

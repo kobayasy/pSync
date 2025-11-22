@@ -1,6 +1,6 @@
-/* popen3.c - Last modified: 29-Mar-2023 (kobayasy)
+/* popen3.c - Last modified: 22-Nov-2025 (kobayasy)
  *
- * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -36,11 +36,9 @@ int popen3(char *const argv[],
     int stderr_pipe[2] = {-1, -1};
     pid_t pid;
 
-    if (pipe(stdin_pipe) == -1)
-        goto error;
-    if (pipe(stdout_pipe) == -1)
-        goto error;
-    if (pipe(stderr_pipe) == -1)
+    if (pipe(stdin_pipe) == -1 ||
+        pipe(stdout_pipe) == -1 ||
+        pipe(stderr_pipe) == -1 )
         goto error;
     pid = fork();
     if (pid == -1)
@@ -49,28 +47,24 @@ int popen3(char *const argv[],
         close(stdin_pipe[1]), stdin_pipe[1] = -1;
         close(stdout_pipe[0]), stdout_pipe[0] = -1;
         close(stderr_pipe[0]), stderr_pipe[0] = -1;
-        if (stdin_pipe[0] != STDIN_FILENO) {
-            dup2(stdin_pipe[0], STDIN_FILENO);
-            close(stdin_pipe[0]), stdin_pipe[0] = -1;
-        }
-        if (stdout_pipe[1] != STDOUT_FILENO) {
-            dup2(stdout_pipe[1], STDOUT_FILENO);
-            close(stdout_pipe[1]), stdout_pipe[1] = -1;
-        }
-        if (stderr_pipe[1] != STDERR_FILENO) {
-            dup2(stderr_pipe[1], STDERR_FILENO);
-            close(stderr_pipe[1]), stderr_pipe[1] = -1;
-        }
-        execvp(argv[0], argv);
-        goto error;
+        if (dup2(stdin_pipe[0], STDIN_FILENO) == -1 ||
+            dup2(stdout_pipe[1], STDOUT_FILENO) == -1 ||
+            dup2(stderr_pipe[1], STDERR_FILENO) == -1 )
+            goto error;
+        close(stdin_pipe[0]), stdin_pipe[0] = -1;
+        close(stdout_pipe[1]), stdout_pipe[1] = -1;
+        close(stderr_pipe[1]), stderr_pipe[1] = -1;
+        status = execvp(argv[0], argv);
     }
-    close(stdin_pipe[0]), stdin_pipe[0] = -1;
-    close(stdout_pipe[1]), stdout_pipe[1] = -1;
-    close(stderr_pipe[1]), stderr_pipe[1] = -1;
-    status = func(stdin_pipe[1], stdout_pipe[0], stderr_pipe[0], pid, data);
-    close(stdin_pipe[1]), stdin_pipe[1] = -1;
-    close(stdout_pipe[0]), stdout_pipe[0] = -1;
-    close(stderr_pipe[0]), stderr_pipe[0] = -1;
+    else {
+        close(stdin_pipe[0]), stdin_pipe[0] = -1;
+        close(stdout_pipe[1]), stdout_pipe[1] = -1;
+        close(stderr_pipe[1]), stderr_pipe[1] = -1;
+        status = func(stdin_pipe[1], stdout_pipe[0], stderr_pipe[0], pid, data);
+        close(stdin_pipe[1]), stdin_pipe[1] = -1;
+        close(stdout_pipe[0]), stdout_pipe[0] = -1;
+        close(stderr_pipe[0]), stderr_pipe[0] = -1;
+    }
 error:
     if (stdin_pipe[0] != -1)
         close(stdin_pipe[0]);

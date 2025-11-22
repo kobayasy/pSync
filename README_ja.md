@@ -1,3 +1,7 @@
+<!--
+README_ja.md - Last modified: 22-Nov-2025 (kobayasy)
+-->
+
 [ [特徴](#特徴) | [動作環境](#動作環境) | [インストール](#インストール) | [使い方](#使い方) ] / [技術資料](doc/DEV_ja.md) / [使い方のヒント](doc/NOTE_ja.md)
 
 ---
@@ -5,12 +9,6 @@
 [![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml) [![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml) [![Windows](https://github.com/kobayasy/pSync/workflows/Windows/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-windows.yml) / [![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
 
 <img src="psync.png" alt="pSync" align="right">
-
-### バージョン3.1リリース (15th of Nov., 2025)
-- ファイルのメタ情報送受信を並列化し、高速化しました。
-- プロトコル変更により、バージョン2系統との互換性がなくなりました。
-	- バージョン2系統のサポートは終了しますので、お早めのバージョンアップをお願いします。
-- メタ情報送受信の並列化に伴い、一部のコマンドラインオプション(`--sync`, `-s`, `--put`, `-p`, `--get`, `-g`)を廃止しました。
 
 ### 特徴
 - オープンソースのクラウドファイル共有システムです。
@@ -50,9 +48,9 @@
 この作業は、ローカルホストを含め、同期する全てのホストで必要です。
 1. 以下のコマンドでビルドとインストールを実行します。
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.1/psync-3.1.tar.gz
-tar xzf psync-3.1.tar.gz
-cd psync-3.1
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.2/psync-3.2.tar.gz
+tar xzf psync-3.2.tar.gz
+cd psync-3.2
 ./configure --prefix=$HOME
 make install
 

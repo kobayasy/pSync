@@ -1,6 +1,6 @@
-/* info.c - Last modified: 03-Feb-2024 (kobayasy)
+/* info.c - Last modified: 22-Nov-2025 (kobayasy)
  *
- * Copyright (C) 2023-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2023-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -114,116 +114,109 @@ typedef struct {
         intmax_t filecopy;
     } host[2];
 } PROGRESS;
-struct {
+static struct {
     int sid[2];
     PROGRESS progress[2];
     TPBAR tpbar;
     size_t namelen;
-} g;
+} priv;
 
 void info_init(size_t namelen) {
-    g.sid[0] = 0, g.sid[1] = 0;
-    g.progress[0].sid = INT_MIN, g.progress[1].sid = INT_MIN;
-    tpbar_init(&g.tpbar);
-    g.namelen = namelen;
-    if (g.tpbar.co < g.namelen + 1+27+1)
-        g.tpbar.up = NULL;
+    priv.sid[0] = 0, priv.sid[1] = 0;
+    priv.progress[0].sid = INT_MIN, priv.progress[1].sid = INT_MIN;
+    tpbar_init(&priv.tpbar);
+    priv.namelen = namelen;
+    if (priv.tpbar.co < priv.namelen + 1+27+1)
+        priv.tpbar.up = NULL;
 }
 
 void info_print(unsigned int host, const char *line) {
-    int update = 0;
+    int update = INT_MIN;
     static const char *hostname[] = {"Local: ", "Remote: "};
-    PROGRESS *progress = &g.progress[g.sid[host] & 1];
-    int n;
+    PROGRESS *progress = &priv.progress[priv.sid[host] & 1];
     char buffer[1024], *s;
     intmax_t n1, n2;
     char buffer1[12], buffer2[12];
 
     switch (*line++) {
+    case '.':
+        update = 0;
+        break;
     case '!':
-        if (!*line)
-            update = -1;
-        else if (strchr("+-", *line) != NULL) {
-            n = strtol(line, NULL, 10);
-            line = strmes(n);
-            update = n < 0 ? -3 : -2;
-        }
-        else
-            update = -2;
+        if (strchr("+-", *line) != NULL)
+            line = strmes(strtol(line, NULL, 10));
+        update = -1;
         break;
     case '[':
-        if (progress->sid != g.sid[host]) {
-            progress->sid = g.sid[host];
-            progress->row = tpbar_getrow(INT_MAX, &g.tpbar);
+        if (progress->sid != priv.sid[host]) {
+            progress->sid = priv.sid[host];
+            progress->row = tpbar_getrow(INT_MAX, &priv.tpbar);
             strcpy(progress->name, line);
             memset(progress->host, 0, sizeof(progress->host));
             update = 1;
         }
         break;
     case ']':
-        ++g.sid[host];
+        ++priv.sid[host];
         break;
     case 'S':
-        if (g.tpbar.up != NULL) {
+        if (priv.tpbar.up != NULL) {
             progress->host[host].filescan = strtoll(line, NULL, 10);
             update = 2;
         }
         break;
     case 'U':
-        if (g.tpbar.up != NULL) {
+        if (priv.tpbar.up != NULL) {
             progress->host[host].upload = strtoll(line, NULL, 10);
             update = 3;
         }
         break;
     case 'D':
-        if (g.tpbar.up != NULL) {
+        if (priv.tpbar.up != NULL) {
             progress->host[host].downloaded = strtoll(line, NULL, 10);
             update = 3;
         }
         break;
     case 'R':
-        if (g.tpbar.up != NULL) {
+        if (priv.tpbar.up != NULL) {
             progress->host[host].fileremove = strtoll(line, NULL, 10);
             update = 4;
         }
         break;
     case 'C':
-        if (g.tpbar.up != NULL) {
+        if (priv.tpbar.up != NULL) {
             progress->host[host].filecopy = strtoll(line, NULL, 10);
             update = 4;
         }
         break;
     }
     switch (update) {
-    case -1:
+    case  0:
         s = buffer;
-        s += tpbar_setrow(s, INT_MAX, &g.tpbar);
+        s += tpbar_setrow(s, INT_MAX, &priv.tpbar);
         s += sprintf(s, "%s", line);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
-    case -2:
+    case -1:
         s = buffer;
-        s += tpbar_setrow(s, INT_MAX, &g.tpbar);
-        s += sprintf(s, "%s%s", hostname[host], line);
-        write(STDOUT_FILENO, buffer, s - buffer);
-        break;
-    case -3:
-        s = buffer;
-        s += tpbar_setrow(s, INT_MAX, &g.tpbar);
-        s += sprintf(s, "%sError - %s", hostname[host], line);
+        s += tpbar_setrow(s, INT_MAX, &priv.tpbar);
+        s += sprintf(s, "%s", hostname[host]);
+        if (progress->sid == priv.sid[host])
+            s += sprintf(s, "%s -", progress->name);
+        s += sprintf(s, " %s", line);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  1:
         s = buffer;
-        s += tpbar_setrow(s, progress->row, &g.tpbar);
+        s += tpbar_setrow(s, progress->row, &priv.tpbar);
         s += sprintf(s, "%s", progress->name);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  2:
         s = buffer;
-        s += tpbar_setrow(s, progress->row, &g.tpbar);
-        s += sprintf(s, "%-*s ", (int)g.namelen, progress->name);
-        s += tpbar_printf(s, 0, 1, &g.tpbar, "[%24jd ]",
+        s += tpbar_setrow(s, progress->row, &priv.tpbar);
+        s += sprintf(s, "%-*s ", (int)priv.namelen, progress->name);
+        s += tpbar_printf(s, 0, 1, &priv.tpbar, "[%24jd ]",
                           progress->host[0].filescan + progress->host[1].filescan );
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
@@ -239,9 +232,9 @@ void info_print(unsigned int host, const char *line) {
         else
             *buffer2 = 0;
         s = buffer;
-        s += tpbar_setrow(s, progress->row, &g.tpbar);
-        s += sprintf(s, "%-*s ", (int)g.namelen, progress->name);
-        s += tpbar_printf(s, n1, n2, &g.tpbar, "[%11s /%11s ]", buffer1, buffer2);
+        s += tpbar_setrow(s, progress->row, &priv.tpbar);
+        s += sprintf(s, "%-*s ", (int)priv.namelen, progress->name);
+        s += tpbar_printf(s, n1, n2, &priv.tpbar, "[%11s /%11s ]", buffer1, buffer2);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     case  4:
@@ -256,9 +249,9 @@ void info_print(unsigned int host, const char *line) {
         else
             *buffer2 = 0;
         s = buffer;
-        s += tpbar_setrow(s, progress->row, &g.tpbar);
-        s += sprintf(s, "%-*s ", (int)g.namelen, progress->name);
-        s += tpbar_printf(s, 1, 1, &g.tpbar, "[%11s :%11s ]", buffer1, buffer2);
+        s += tpbar_setrow(s, progress->row, &priv.tpbar);
+        s += sprintf(s, "%-*s ", (int)priv.namelen, progress->name);
+        s += tpbar_printf(s, 1, 1, &priv.tpbar, "[%11s :%11s ]", buffer1, buffer2);
         write(STDOUT_FILENO, buffer, s - buffer);
         break;
     }
