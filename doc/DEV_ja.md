@@ -40,10 +40,10 @@ DEV_ja.md - Last modified: 22-Nov-2025 (kobayasy)
 ![psync info](psyncInfo.svg)
 
 ## ファイル同期関数の使い方
-- 使い方は簡単です。同期元と同期先のディレクトリに対して、それぞれ `psync_new()`、`psync_run()`、`psync_free()` を順番に呼び出すだけです。
-- 下記は、`~/dir1` と `~/dir2` 内のファイルを同期するサンプルコードです。説明のため、エラー処理、中断処理、進捗表示は省略しています。
+使い方は簡単です。同期元と同期先のディレクトリに対して、それぞれ `psync_new()`、`psync_run()`、`psync_free()` を順番に呼び出すだけです。
+下記は、`~/dir1` と `~/dir2` 内のファイルを同期するサンプルコードです。説明のため、エラー処理、中断処理、進捗表示は省略しています。
 - `psync_run()` を呼び出す前に、同期元の `fdout` を同期先の `fdin` に、同期先の `fdout` を同期元の `fdin` に、それぞれファイルディスクリプタで接続します。`psync` コマンドはSSHの標準入出力で接続しますが、手段は問いません。この例ではパイプを使用しています。
-- `psync_run()` は、同期元と同期先の間でファイルデータをやり取りするために、並列で実行する必要があります。`psync` コマンドでは別のPCで並列実行しますが、手段は問いません。この例では `pthread` を使用しています。
+- `psync_run()` は、同期元と同期先の間でファイルデータをやり取りするために、並列で実行する必要があります。`psync` コマンドでは別のPCで並列実行しますが、手段は問いません。この例では pthread を使用しています。
 ```c
 /* psync_example.c - ファイル同期関数の使い方サンプルコード
  */
@@ -93,15 +93,14 @@ int main(int argc, char *argv[])
     return 0;
 }
 ```
-上記サンプルコードと pSync 配布ファイルの psync.c, psync.h, common.c, common.h, progress.c, progress.h を pthread を有効にして ビルド & リンク する。
-GCC だとバージョンにもよるけど下記で良いと思う。
+上記のサンプルコードは、pSync配布ファイルの `psync.c`、`psync.h`、`common.c`、`common.h`、`progress.c`、`progress.h` と共に、pthread を有効にしてビルドします。
+GCCを使用する場合、以下のコマンドでビルドできます。
 ```sh
 gcc -pthread -o psync_example psync_example.c psync.c common.c progress.c
 
 ```
-
-下記はファイル同期の実行例。
-- 実行の結果 dir1/ と dir2/ の内容が同期されて同じになる。
+以下にファイル同期の実行例を示します。
+実行すると、`~/dir1` と `~/dir2` の内容が同期され、同一になります。
 ```sh
 $ mkdir dir1 dir2
 $ echo foo > dir1/file1
