@@ -2,7 +2,7 @@
 README_ja.md - Last modified: 29-Nov-2025 (kobayasy)
 -->
 
-[ [特徴](#特徴) | [動作環境](#動作環境) | [インストール](#インストール) | [使い方](#使い方) ] / [技術資料](doc/DEV_ja.md) / [使い方のヒント](doc/NOTE_ja.md) // ![英語(English)](#README_en.md)
+[ [特徴](#特徴) | [動作環境](#動作環境) | [インストール](#インストール) | [使い方](#使い方) ] / [技術資料](doc/DEV_ja.md) / [使い方のヒント](doc/NOTE_ja.md) // ![英語(English)](README_en.md)
 
 ---
 
