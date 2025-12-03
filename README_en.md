@@ -1,5 +1,5 @@
 <!--
-README_ja.md - Last modified: 29-Nov-2025 (kobayasy)
+README_ja.md - Last modified: 03-Dec-2025 (kobayasy)
 -->
 
 [ [Features](#Features) | [System Requirements](#System-Requirements) | [Installation](#Installation) | [Usage](#Usage) ] // [Japanase(日本語)](README_ja.md)
@@ -77,4 +77,3 @@ psync --help
 psync guest@example.com
 
 ```
-
