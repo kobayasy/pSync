@@ -1,6 +1,6 @@
-# configure.ac - Last modified: 22-Nov-2025 (kobayasy)
+# configure.ac - Last modified: 10-Jan-2026 (kobayasy)
 #
-# Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+# Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -23,8 +23,8 @@
 # SOFTWARE.
 
 AC_PREREQ(2.69)
-AC_INIT([pSync], [3.2], [kobayasy@kobayasy.com], [psync])
-AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
+AC_INIT([pSync], [3.3], [kobayasy@kobayasy.com], [psync])
+AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
 
@@ -91,7 +91,8 @@ AS_VAR_SET_IF([withval],
     AC_SUBST([SSH], [$withval])
     AS_CASE([$withval],
      [/*],
-       [AC_SUBST([SSH_PATH], ['./" '])] ) ] )
+       [AC_SUBST([SSH_RPATH], ['./" '])],
+       [AC_SUBST([SSH_APATH], ['./" '])] ) ] )
 MY_ARG_WITH([sshopts], [OPTS], [command line options for SSH @{:@default: -qCp%u@:}@])
 AS_VAR_SET_IF([withval],
    [AC_DEFINE_UNQUOTED([SSHOPTS], ["$withval"], [Command line options to enable quiet and compress, and set port for SSH.])] )

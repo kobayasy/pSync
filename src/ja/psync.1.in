@@ -1,5 +1,5 @@
 ./" @configure_input@
-./" psync.1.in - Last modified: 15-Nov-2025 (kobayasy)
+./" psync.1.in - Last modified: 10-Jan-2026 (kobayasy)
 ./"
 ./" Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 ./"
@@ -23,7 +23,7 @@
 ./" CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ./" SOFTWARE.
 ./"
-.Dd Nov 15, 2025
+.Dd Jan 10, 2026
 .Dt PSYNC 1
 .Os POSIX
 .Sh NAME
@@ -66,9 +66,10 @@ pSync は内部で SSH の
 SSH のリモートコマンド実行、ユーザー認証、転送データの暗号化と圧縮の機能を利用して専用のサーバが不要でセキュアな高速ファイル転送を実現している。
 その為 pSync を動作させる前提条件として
 .Nm @SSH@
-で同期相手へログインできる環境設定が必要で
-@SSH_PATH@.Nm @SSH@
-@SSH_PATH@に実行パスが通っている事。
+@SSH_APATH@同期相手へログインできる環境設定が必要。
+@SSH_RPATH@同期相手へログインできる環境設定が必要で
+@SSH_RPATH@.Nm @SSH@
+@SSH_RPATH@に実行パスが通っている事。
 同期相手にも pSync のインストールが必要で
 .Nm @SSH@
 でログインした状態で
@@ -100,7 +101,7 @@ pSync は同期相手側としてリモートで起動される場合も含め�
 このオプションはデフォルトで有効。
 .Fl Fl quiet Ns Po Fl q Pc
 とは排他関係に有り一番最後の指定が有効になる。
-.It Fl q Ns , Fl Fl quite
+.It Fl q Ns , Fl Fl quiet
 エラー以外のメッセージ出力を止める。
 .Fl Fl verbose Ns Po Fl v Pc
 とは排他関係に有り一番最後の指定が有効になる。
@@ -161,9 +162,9 @@ pSync は同期相手側としてリモートで起動される場合も含め�
 .It Ev PATH
 実行パスを設定する環境変数。
 .Nm
-と
-@SSH_PATH@.Nm @SSH@
-@SSH_PATH@に実行パスを通す事。
+@SSH_RPATH@と
+@SSH_RPATH@.Nm @SSH@
+に実行パスを通す事。
 .El
 .Sh FILES
 .Bl -tag -width Ds

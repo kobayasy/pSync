@@ -1,5 +1,5 @@
 # .github/workflows/release.yml
-# Last modified: 03-Feb-2024 (kobayasy)
+# Last modified: 10-Jan-2026 (kobayasy)
 
 name: Release
 
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Release
       id: release
       uses: actions/create-release@v1

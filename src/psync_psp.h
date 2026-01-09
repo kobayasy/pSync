@@ -1,6 +1,6 @@
-/* psync_psp.h - Last modified: 15-Nov-2025 (kobayasy)
+/* psync_psp.h - Last modified: 10-Jan-2026 (kobayasy)
  *
- * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
