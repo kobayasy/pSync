@@ -39,7 +39,7 @@ README_en.md - Last modified: 10-Jan-2026 (kobayasy)
 - The only metadata synchronised is permissions (owner, group, others), creation time, and modification time.
 	- Other metadata (User ID, Group ID, access time, etc.) is not synchronised and depends on the destination host's environment.
 
-### Requirements
+### System Requirements
 - SSH connection must be possible from the source host to the destination host.
 	- An SSH server must be installed on the destination host.
 	- An SSH client must be installed on the source host.
