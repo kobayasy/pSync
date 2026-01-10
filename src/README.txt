@@ -10,8 +10,8 @@ cd psync-3.3
 ./configure --prefix=$HOME
 make install
 ---
-2. If `~/bin` is not in your PATH, please add it to your environment variables.
-3. The following configuration is required only for the initial setup. This is an example setting `~/pSync` as the synchronisation directory. Note that while the directory name can differ between the source and destination, the label name must match.
+2. If ~/bin is not in your PATH, please add it to your environment variables.
+3. The following configuration is required only for the initial setup. This is an example setting ~/pSync as the synchronisation directory. Note that while the directory name can differ between the source and destination, the label name must match.
 ---
 mkdir ~/pSync && chmod 700 ~/pSync
 cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
@@ -25,7 +25,7 @@ Usage:
 ---
 psync --help
 ---
-2. For example, to synchronise with `guest@example.com`, execute the following command:
+2. For example, to synchronise with guest@example.com, execute the following command:
 ---
 psync guest@example.com
 ---
