@@ -1,5 +1,5 @@
 <!--
-README_en.md - Last modified: 10-Jan-2026 (kobayasy)
+README_en.md - Last modified: 13-Jan-2026 (kobayasy)
 -->
 
 [ [Features](#Features) | [System Requirements](#System-Requirements) | [Installation](#Installation) | [Usage](#Usage) ] // [Japanase(日本語)](README_ja.md)
@@ -57,7 +57,7 @@ make install
 
 ```
 2. If `~/bin` is not in your PATH, please add it to your environment variables.
-3. The following configuration is required only for the initial setup.
+3. The following configuration is **required only for the initial setup**.
 This is an example setting `~/pSync` as the synchronisation directory.
 Note that while the directory name can differ between the source and destination, the label name must match.
 ```sh
