@@ -1,5 +1,5 @@
 <!--
-README_ja.md - Last modified: 13-Jan-2026 (kobayasy)
+README_ja.md - Last modified: 17-Jan-2026 (kobayasy)
 -->
 
 [ [特徴](#特徴) | [動作環境](#動作環境) | [インストール](#インストール) | [使い方](#使い方) ] / [技術資料](doc/DEV_ja.md) / [雑記](doc/NOTE_ja.md) // [英語(English)](README_en.md)
@@ -49,9 +49,9 @@ README_ja.md - Last modified: 13-Jan-2026 (kobayasy)
 同期元と同期先で違いはなく同じ作業になります。
 1. 以下のコマンドでビルドとインストールを実行します。
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.4/psync-3.4.tar.gz
-tar xzf psync-3.4.tar.gz
-cd psync-3.4
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.5/psync-3.5.tar.gz
+tar xzf psync-3.5.tar.gz
+cd psync-3.5
 ./configure --prefix=$HOME
 make install
 

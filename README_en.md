@@ -1,5 +1,5 @@
 <!--
-README_en.md - Last modified: 13-Jan-2026 (kobayasy)
+README_en.md - Last modified: 17-Jan-2026 (kobayasy)
 -->
 
 [ [Features](#Features) | [System Requirements](#System-Requirements) | [Installation](#Installation) | [Usage](#Usage) ] // [Japanase(日本語)](README_ja.md)
@@ -49,9 +49,9 @@ This procedure is required on all hosts involved in synchronisation.
 The steps are identical for both source and destination hosts.
 1. Execute the build and installation using the following commands:
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.4/psync-3.4.tar.gz
-tar xzf psync-3.4.tar.gz
-cd psync-3.4
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.5/psync-3.5.tar.gz
+tar xzf psync-3.5.tar.gz
+cd psync-3.5
 ./configure --prefix=$HOME
 make install
 
