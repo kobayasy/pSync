@@ -1,6 +1,6 @@
-/* main.c - Last modified: 22-Nov-2025 (kobayasy)
+/* main.c - Last modified: 18-Jan-2026 (kobayasy)
  *
- * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -110,6 +110,8 @@ static void *info_thread(void *data) {
                         infos[host] = -1;
                         break;
                     default:
+                        if (size >= sizeof(buffer))  /* buffer overflow */
+                            break;
                         buffer[size] = 0;
                         s = buffer;
                         while ((s = strchr(line = s, '\n')) != NULL) {
@@ -321,15 +323,14 @@ static char *strtrim(char *str) {
     char *s;
 
     while (isspace(*str))
-        ++str;
-    if (*str) {
-        s = str + strlen(str);
-        while (isspace(*--s));
-        s[1] = 0;
-    }
+        *str++ = 0;
+    s = str + strlen(str);
+    while (s > str && isspace(*--s))
+        *s = 0;
     return str;
 }
 
+#define CONFEOL '\n'
 #define CONFREM '#'
 #define CONFVAR '='
 static int get_config(const char *confname, PSP *psp) {
@@ -352,15 +353,21 @@ static int get_config(const char *confname, PSP *psp) {
     line = 0;
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         ++line;
-        if ((s = strchr(buffer, CONFREM)) != NULL)
+        s = strchr(buffer, CONFEOL);
+        if (s == NULL) {
+            fprintf(stderr, "Error: Line %u: No end of line.\n", line);
+            status = ERROR_CONF;
+            goto error;
+        }
+        *s = 0;
+        s = strchr(buffer, CONFREM);
+        if (s != NULL)
             *s = 0;
         name = strtrim(buffer);
         if (!*name)
             continue;
         s = name;
         while (*++s && !isspace(*s));
-        if (*s)
-            *s++ = 0;
         dirname = strtrim(s);
         s = strchr(name, CONFVAR);
         if (s != NULL) {

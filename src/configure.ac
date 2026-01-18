@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 17-Jan-2026 (kobayasy)
+# configure.ac - Last modified: 18-Jan-2026 (kobayasy)
 #
 # Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 AC_PREREQ(2.72)
-AC_INIT([pSync], [3.5], [kobayasy@kobayasy.com], [psync])
+AC_INIT([pSync], [3.6], [kobayasy@kobayasy.com], [psync])
 AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
