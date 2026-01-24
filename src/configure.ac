@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 18-Jan-2026 (kobayasy)
+# configure.ac - Last modified: 24-Jan-2026 (kobayasy)
 #
 # Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -23,7 +23,7 @@
 # SOFTWARE.
 
 AC_PREREQ(2.72)
-AC_INIT([pSync], [3.6], [kobayasy@kobayasy.com], [psync])
+AC_INIT([pSync], [3.7], [kobayasy@kobayasy.com], [psync])
 AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
@@ -32,6 +32,7 @@ AC_SUBST([CONFFILE], ['~/.psync.conf'])
 AC_SUBST([BACKUP], ['3'])
 AC_SUBST([EXPIRE], ['400'])
 AC_SUBST([SSH], ['ssh'])
+AC_SUBST([SSHOPTS], ['-qCp%u --'])
 AC_SUBST([SSHPORT], ['22'])
 
 AC_DEFUN([MY_ARG_ENABLE],
@@ -93,7 +94,7 @@ AS_VAR_SET_IF([withval],
      [/*],
        [AC_SUBST([SSH_RPATH], ['./" '])],
        [AC_SUBST([SSH_APATH], ['./" '])] ) ] )
-MY_ARG_WITH([sshopts], [OPTS], [command line options for SSH @{:@default: -qCp%u@:}@])
+MY_ARG_WITH([sshopts], [OPTS], [command line options for SSH @{:@default: -qCp%u --@:}@])
 AS_VAR_SET_IF([withval],
    [AC_DEFINE_UNQUOTED([SSHOPTS], ["$withval"], [Command line options to enable quiet and compress, and set port for SSH.])] )
 MY_ARG_WITH([sshport], [PORT], [default port number for SSH @{:@default: 22@:}@])

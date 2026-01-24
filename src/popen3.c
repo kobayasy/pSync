@@ -1,6 +1,6 @@
-/* popen3.c - Last modified: 22-Nov-2025 (kobayasy)
+/* popen3.c - Last modified: 24-Jan-2026 (kobayasy)
  *
- * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -23,14 +23,13 @@
  * SOFTWARE.
  */
 
-#include <limits.h>
 #include <unistd.h>
 #include "popen3.h"
 
 int popen3(char *const argv[],
            int (*func)(int fdin, int fdout, int fderr, pid_t pid, void *data),
                                                                   void *data ) {
-    int status = INT_MIN;
+    int status = -1;
     int stdin_pipe[2] = {-1, -1};
     int stdout_pipe[2] = {-1, -1};
     int stderr_pipe[2] = {-1, -1};

@@ -1,6 +1,6 @@
-/* common.c - Last modified: 29-Mar-2023 (kobayasy)
+/* common.c - Last modified: 24-Jan-2026 (kobayasy)
  *
- * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -27,6 +27,7 @@
 #include "config.h"
 #endif  /* #ifdef HAVE_CONFIG_H */
 
+#include <errno.h>
 #include <limits.h>
 #include <string.h>
 #include <unistd.h>
@@ -49,14 +50,25 @@ ssize_t write_size(int fd, const void *buf, size_t count) {
     size = count;
     while (size > 0) {
 #ifdef POLL_TIMEOUT
-        if (poll(&fds, 1, POLL_TIMEOUT) != 1)
+        switch (poll(&fds, 1, POLL_TIMEOUT)) {
+        case -1:
+            switch (errno) {
+            case EINTR:
+                continue;
+            }
+        case  0:  /* timeout */
             goto error;
+        }
         if (!(fds.revents & POLLOUT))
             goto error;
 #endif  /* #ifdef POLL_TIMEOUT */
         n = write(fd, buf, size);
         switch (n) {
         case -1:
+            switch (errno) {
+            case EINTR:
+                continue;
+            }
         case  0:  /* end of file */
             goto error;
         }
@@ -82,14 +94,25 @@ ssize_t read_size(int fd, void *buf, size_t count) {
     size = count;
     while (size > 0) {
 #ifdef POLL_TIMEOUT
-        if (poll(&fds, 1, POLL_TIMEOUT) != 1)
+        switch (poll(&fds, 1, POLL_TIMEOUT)) {
+        case -1:
+            switch (errno) {
+            case EINTR:
+                continue;
+            }
+        case  0:  /* timeout */
             goto error;
+        }
         if (!(fds.revents & POLLIN))
             goto error;
 #endif  /* #ifdef POLL_TIMEOUT */
         n = read(fd, buf, size);
         switch (n) {
         case -1:
+            switch (errno) {
+            case EINTR:
+                continue;
+            }
         case  0:  /* end of file */
             goto error;
         }

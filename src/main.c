@@ -1,4 +1,4 @@
-/* main.c - Last modified: 18-Jan-2026 (kobayasy)
+/* main.c - Last modified: 24-Jan-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -56,7 +56,7 @@
 #define SSH "ssh"
 #endif  /* #ifndef SSH */
 #ifndef SSHOPTS
-#define SSHOPTS "-qCp%u"
+#define SSHOPTS "-qCp%u --"
 #endif  /* #ifndef SSHOPTS */
 #ifndef SSHPORT
 #define SSHPORT 22
@@ -382,7 +382,7 @@ static int get_config(const char *confname, PSP *psp) {
             else if (!strcmp(name, "backup"))
                 head->backup = strtoul(s, &p, 10) * 60*60*24;
             if (p == NULL || *p) {
-                fprintf(stderr, "Error: Line %u in \"~/%s\": Invarid parameter \"%s%c%s\".\n", line, confname, name, CONFVAR, s);
+                fprintf(stderr, "Error: Line %u in \"~/%s\": Invalid parameter \"%s%c%s\".\n", line, confname, name, CONFVAR, s);
                 status = ERROR_CONF;
                 goto error;
             }
@@ -430,7 +430,7 @@ static int get_opts(char *argv[], OPTS *opts) {
             s = *argv;
             switch (*++s) {
             case 0:
-                fprintf(stderr, "Error: Invarid option: %s\n", *argv);
+                fprintf(stderr, "Error: Invalid option: %s\n", *argv);
                 status = ERROR_ARGS;
                 goto error;
             case '-':
@@ -444,7 +444,7 @@ static int get_opts(char *argv[], OPTS *opts) {
                 else if (!strcmp(s, "quiet"))
                     opts->verbose = false;
                 else {
-                    fprintf(stderr, "Error: Invarid option: %s\n", *argv);
+                    fprintf(stderr, "Error: Invalid option: %s\n", *argv);
                     status = ERROR_ARGS;
                     goto error;
                 }
@@ -459,7 +459,7 @@ static int get_opts(char *argv[], OPTS *opts) {
                         opts->verbose = false;
                         break;
                     default:
-                        fprintf(stderr, "Error: Invarid option: -%c\n", *s);
+                        fprintf(stderr, "Error: Invalid option: -%c\n", *s);
                         status = ERROR_ARGS;
                         goto error;
                     }
@@ -468,7 +468,7 @@ static int get_opts(char *argv[], OPTS *opts) {
             break;
         default:
             if (opts->hostname != NULL) {
-                fprintf(stderr, "Error: Invarid argument: %s\n", *argv);
+                fprintf(stderr, "Error: Invalid argument: %s\n", *argv);
                 status = ERROR_ARGS;
                 goto error;
             }
@@ -540,7 +540,7 @@ int main(int argc, char *argv[]) {
         goto error;
     }
     if (chdir(s) == -1) {
-        fprintf(stderr, "Error: Can not change diractory to %s\n", s);
+        fprintf(stderr, "Error: Can not change directory to %s\n", s);
         status = ERROR_ENVS;
         goto error;
     }

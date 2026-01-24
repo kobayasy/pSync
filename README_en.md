@@ -1,12 +1,22 @@
 <!--
-README_en.md - Last modified: 18-Jan-2026 (kobayasy)
+README_en.md - Last modified: 24-Jan-2026 (kobayasy)
 -->
 
-[ [Features](#Features) | [System Requirements](#System-Requirements) | [Installation](#Installation) | [Usage](#Usage) ] // [Japanase(日本語)](README_ja.md)
+[
+	[Features](#Features) |
+	[System Requirements](#System-Requirements) |
+	[Installation](#Installation) |
+	[Usage](#Usage)
+]
+// [Japanase (日本語)](README_ja.md)
 
 ---
 
-[![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml) [![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml) [![Windows](https://github.com/kobayasy/pSync/workflows/Windows/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-windows.yml) / [![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
+[![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml)
+[![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml)
+[![Windows](https://github.com/kobayasy/pSync/workflows/Windows/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-windows.yml)
+/
+[![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
 
 <img src="psync.png" alt="pSync" align="right">
 
@@ -49,9 +59,9 @@ This procedure is required on all hosts involved in synchronisation.
 The steps are identical for both source and destination hosts.
 1. Execute the build and installation using the following commands:
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.6/psync-3.6.tar.gz
-tar xzf psync-3.6.tar.gz
-cd psync-3.6
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.7/psync-3.7.tar.gz
+tar xzf psync-3.7.tar.gz
+cd psync-3.7
 ./configure --prefix=$HOME
 make install
 

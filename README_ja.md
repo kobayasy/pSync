@@ -1,12 +1,24 @@
 <!--
-README_ja.md - Last modified: 18-Jan-2026 (kobayasy)
+README_ja.md - Last modified: 24-Jan-2026 (kobayasy)
 -->
 
-[ [特徴](#特徴) | [動作環境](#動作環境) | [インストール](#インストール) | [使い方](#使い方) ] / [技術資料](doc/DEV_ja.md) / [雑記](doc/NOTE_ja.md) // [英語(English)](README_en.md)
+[
+	[特徴](#特徴) |
+	[動作環境](#動作環境) |
+	[インストール](#インストール) |
+	[使い方](#使い方)
+]
+/ [技術資料](doc/DEV_ja.md)
+/ [雑記](doc/NOTE_ja.md)
+// [英語 (English)](README_en.md)
 
 ---
 
-[![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml) [![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml) [![Windows](https://github.com/kobayasy/pSync/workflows/Windows/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-windows.yml) / [![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
+[![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml)
+[![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml)
+[![Windows](https://github.com/kobayasy/pSync/workflows/Windows/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-windows.yml)
+/
+[![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
 
 <img src="psync.png" alt="pSync" align="right">
 
@@ -49,9 +61,9 @@ README_ja.md - Last modified: 18-Jan-2026 (kobayasy)
 同期元と同期先で違いはなく同じ作業になります。
 1. 以下のコマンドでビルドとインストールを実行します。
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.6/psync-3.6.tar.gz
-tar xzf psync-3.6.tar.gz
-cd psync-3.6
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.7/psync-3.7.tar.gz
+tar xzf psync-3.7.tar.gz
+cd psync-3.7
 ./configure --prefix=$HOME
 make install
 
