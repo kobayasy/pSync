@@ -61,9 +61,9 @@ README_ja.md - Last modified: 07-Feb-2026 (kobayasy)
 同期元と同期先で違いはなく同じ作業になります。
 1. 以下のコマンドでビルドとインストールを実行します。
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.9/psync-3.9.tar.gz
-tar xzf psync-3.9.tar.gz
-cd psync-3.9
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.10/psync-3.10.tar.gz
+tar xzf psync-3.10.tar.gz
+cd psync-3.10
 ./configure --prefix=$HOME
 make install
 ```

@@ -22,7 +22,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT([pSync], [3.8], [kobayasy@kobayasy.com], [psync])
+AC_INIT([pSync], [3.10], [kobayasy@kobayasy.com], [psync])
 AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
 AC_PREREQ(2.72)
 AC_CONFIG_SRCDIR([psync.c])
