@@ -5650,6 +5650,40 @@ ac_config_headers="$ac_config_headers config.h"
 
 
 
+
+if test ${CFLAGS+y}
+then :
+
+  case " $CFLAGS " in #(
+  *" -I. "*) :
+    { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: : CFLAGS already contains -I."; } >&5
+  (: CFLAGS already contains -I.) 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; } ;; #(
+  *) :
+
+     as_fn_append CFLAGS " -I."
+     { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS\""; } >&5
+  (: CFLAGS="$CFLAGS") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }
+     ;;
+esac
+
+else case e in #(
+  e)
+  CFLAGS=-I.
+  { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS\""; } >&5
+  (: CFLAGS="$CFLAGS") 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }
+   ;;
+esac
+fi
+
 ac_config_files="$ac_config_files ja/psync.1 ja/psync.conf.5"
 
 cat >confcache <<\_ACEOF

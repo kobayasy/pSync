@@ -107,5 +107,6 @@ AC_CONFIG_HEADERS([config.h])
 AH_TOP([#ifndef _INCLUDE_config_h
 #define _INCLUDE_config_h])
 AH_BOTTOM([#endif  /* #ifndef _INCLUDE_config_h */])
+AX_APPEND_FLAG([-I.])
 AC_CONFIG_FILES([ja/psync.1 ja/psync.conf.5])
 AC_OUTPUT
