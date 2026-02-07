@@ -1,6 +1,6 @@
-/* progress.h - Last modified: 29-Mar-2023 (kobayasy)
+/* progress.h - Last modified: 07-Feb-2026 (kobayasy)
  *
- * Copyright (C) 2018-2023 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -27,6 +27,7 @@
 #define _INCLUDE_progress_h
 
 #include <stdint.h>
+#include <time.h>
 
 typedef struct {
     int fd;

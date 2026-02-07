@@ -1,6 +1,6 @@
-/* tpbar.h - Last modified: 03-Feb-2024 (kobayasy)
+/* tpbar.h - Last modified: 07-Feb-2026 (kobayasy)
  *
- * Copyright (C) 2023-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -27,9 +27,7 @@
 #define _INCLUDE_tpbar_h
 
 #include <stdint.h>
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif  /* #ifdef HAVE_CONFIG_H */
+#include "common.h"
 
 typedef struct {
     char *up;
@@ -40,14 +38,15 @@ typedef struct {
         int min, max;
     } row;
 #ifdef HAVE_TGETENT
-    char buffer[1024];
+#define TPBAR_BUFFER_SIZE 1024
+    char buffer[TPBAR_BUFFER_SIZE];
 #endif  /* #ifdef HAVE_TGETENT */
 } TPBAR;
 
 extern void tpbar_init(TPBAR *tpbar);
 extern int tpbar_getrow(int row, TPBAR *tpbar);
-extern int tpbar_setrow(char *str, int row, TPBAR *tpbar);
-extern int tpbar_printf(char *str, intmax_t current, intmax_t goal, TPBAR *tpbar,
+extern int tpbar_setrow(STR *str, int row, TPBAR *tpbar);
+extern int tpbar_printf(STR *str, intmax_t current, intmax_t goal, TPBAR *tpbar,
                         const char *format, ... );
 
 #endif  /* #ifndef _INCLUDE_tpbar_h */

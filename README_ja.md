@@ -1,5 +1,5 @@
 <!--
-README_ja.md - Last modified: 24-Jan-2026 (kobayasy)
+README_ja.md - Last modified: 07-Feb-2026 (kobayasy)
 -->
 
 [
@@ -61,12 +61,11 @@ README_ja.md - Last modified: 24-Jan-2026 (kobayasy)
 同期元と同期先で違いはなく同じ作業になります。
 1. 以下のコマンドでビルドとインストールを実行します。
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.7/psync-3.7.tar.gz
-tar xzf psync-3.7.tar.gz
-cd psync-3.7
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.8/psync-3.8.tar.gz
+tar xzf psync-3.8.tar.gz
+cd psync-3.8
 ./configure --prefix=$HOME
 make install
-
 ```
 2. `~/bin` にPATHが通っていない場合は、環境変数に追加してください。
 3. **初回起動時のみ**、以下の設定が必要です。
@@ -78,17 +77,14 @@ cat <<. >~/.psync.conf && chmod 600 ~/.psync.conf
 #Label Directory
 psync  pSync
 .
-
 ```
 
 ### 使い方
 1. 以下のコマンドでヘルプが表示されます。
 ```sh
 psync --help
-
 ```
 2. 例として、`guest@example.com` と同期するには、以下のコマンドを実行します。
 ```sh
 psync guest@example.com
-
 ```

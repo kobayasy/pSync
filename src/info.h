@@ -1,6 +1,6 @@
-/* info.h - Last modified: 22-Nov-2025 (kobayasy)
+/* info.h - Last modified: 07-Feb-2026 (kobayasy)
  *
- * Copyright (C) 2023-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -28,7 +28,8 @@
 
 #include <stddef.h>
 
-extern void info_init(size_t namelen);
-extern void info_print(unsigned int host, const char *line);
+extern void *info_new(size_t namelen);
+extern void info_free(void *p);
+extern void info_print(void *p, unsigned int host, const char *line);
 
 #endif  /* #ifndef _INCLUDE_info_h */

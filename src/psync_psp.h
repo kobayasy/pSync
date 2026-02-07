@@ -1,4 +1,4 @@
-/* psync_psp.h - Last modified: 10-Jan-2026 (kobayasy)
+/* psync_psp.h - Last modified: 07-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *

@@ -45,7 +45,7 @@
 /* Define to 1 if you have the <termcap.h> header file. */
 #undef HAVE_TERMCAP_H
 
-/* Define to 1 if you have the `tgetent' function. */
+/* Define to 1 if you have the 'tgetent' function. */
 #undef HAVE_TGETENT
 
 /* Define to 1 if you have the <unistd.h> header file. */

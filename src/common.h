@@ -1,4 +1,4 @@
-/* common.h - Last modified: 24-Jan-2026 (kobayasy)
+/* common.h - Last modified: 07-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -28,9 +28,13 @@
 
 #include <limits.h>
 #include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include <unistd.h>
+#include <time.h>
+#include <sys/types.h>
 
 #define ISERR(_status) ((_status) < 0)
 #define ONERR(_status, _error) \
@@ -48,6 +52,21 @@
             goto error; \
         } \
     } while (0)
+
+typedef struct {
+    char *s, *e;
+    size_t size;
+    bool hold;
+} STR;
+extern void str_init(STR *str, char *buffer, size_t size);
+#define STR_INIT(_str, _buffer) str_init(&(_str), (_buffer), sizeof(_buffer))
+#define str_len(_str) ((_str)->e - (_str)->s)
+extern int str_cats(STR *str, ...);
+extern int str_catfv(STR *str, const char *format, va_list ap);
+extern int str_catf(STR *str, const char *format, ...);
+extern int str_catt(STR *str, const char *format, const struct tm *tm);
+
+extern const char *basename_c(const char *path);
 
 #define WRITE(_data, _fd, _write, _status) \
     do { \

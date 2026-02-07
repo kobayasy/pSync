@@ -1,6 +1,6 @@
-/* info.c - Last modified: 22-Nov-2025 (kobayasy)
+/* info.c - Last modified: 07-Feb-2026 (kobayasy)
  *
- * Copyright (C) 2023-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -28,11 +28,12 @@
 #endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <limits.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "common.h"
 #include "tpbar.h"
 #include "info.h"
 
@@ -89,23 +90,28 @@ static const char *strmes(int status) {
     return mes[status];
 }
 
-static char *strfnum(char *str, size_t length, intmax_t num) {
-    const char *unit = "kMGTPEZYRQ";
+static int str_catib(STR *str, size_t length, intmax_t num) {
+    int status = -1;
+    const char *unit = "KMGTPEZYRQ";
 
     if (unit[0] && (num >= 1024 || num <= -1024)) {
         while (unit[1] && (num >= 1024*1024 || num <= -1024*1024))
             ++unit, num /= 1024;
-        sprintf(str, "%*.3f%cB", (int)(length - 2), (double)(int32_t)num / 1024, *unit);
+        if (ISERR(str_catf(str, "%*.3f%ciB", (int)(length - 3), (double)num / 1024, *unit)))
+            goto error;
     }
     else
-        sprintf(str, "%*jdB", (int)(length - 1), num);
-    return str;
+        if (ISERR(str_catf(str, "%*jdB", (int)(length - 1), num)))
+            goto error;
+    status = 0;
+error:
+    return status;
 }
 
 typedef struct {
     int sid;
     int row;
-    char name[1024];
+    char *name;
     struct {
         intmax_t filescan;
         intmax_t upload;
@@ -114,29 +120,49 @@ typedef struct {
         intmax_t filecopy;
     } host[2];
 } PROGRESS;
-static struct {
+typedef struct {
     int sid[2];
     PROGRESS progress[2];
     TPBAR tpbar;
     size_t namelen;
-} priv;
+    char buffer[];
+} PRIV;
 
-void info_init(size_t namelen) {
-    priv.sid[0] = 0, priv.sid[1] = 0;
-    priv.progress[0].sid = INT_MIN, priv.progress[1].sid = INT_MIN;
-    tpbar_init(&priv.tpbar);
-    priv.namelen = namelen;
-    if (priv.tpbar.co < priv.namelen + 1+27+1)
-        priv.tpbar.up = NULL;
+void *info_new(size_t namelen) {
+    PRIV *priv = NULL;
+    unsigned int host;
+
+    priv = malloc(sizeof(*priv) + (namelen + 1) * 2);
+    if (priv == NULL)
+        goto error;
+    for (host = 0; host < 2; ++host) {
+        priv->sid[host] = 0;
+        priv->progress[host].sid = INT_MIN;
+        priv->progress[host].name = priv->buffer + (namelen + 1) * host;
+    }
+    tpbar_init(&priv->tpbar);
+    priv->namelen = namelen;
+    if (priv->tpbar.co < priv->namelen + 1+29+1)
+        priv->tpbar.up = NULL;
+error:
+    return priv;
 }
 
-void info_print(unsigned int host, const char *line) {
+void info_free(void *p) {
+    PRIV *priv = p;
+
+    free(priv);
+}
+
+void info_print(void *p, unsigned int host, const char *line) {
+    PRIV *priv = p;
     int update = INT_MIN;
     static const char *hostname[] = {"Local: ", "Remote: "};
-    PROGRESS *progress = &priv.progress[priv.sid[host] & 1];
-    char buffer[1024], *s;
+    PROGRESS *progress = &priv->progress[priv->sid[host] & 1];
+    STR buffer;
+    char str[1024];
     intmax_t n1, n2;
-    char buffer1[12], buffer2[12];
+    char str1[13], str2[13];
 
     switch (*line++) {
     case '.':
@@ -148,43 +174,43 @@ void info_print(unsigned int host, const char *line) {
         update = -1;
         break;
     case '[':
-        if (progress->sid != priv.sid[host]) {
-            progress->sid = priv.sid[host];
-            progress->row = tpbar_getrow(INT_MAX, &priv.tpbar);
+        if (progress->sid != priv->sid[host]) {
+            progress->sid = priv->sid[host];
+            progress->row = tpbar_getrow(INT_MAX, &priv->tpbar);
             strcpy(progress->name, line);
             memset(progress->host, 0, sizeof(progress->host));
             update = 1;
         }
         break;
     case ']':
-        ++priv.sid[host];
+        ++priv->sid[host];
         break;
     case 'S':
-        if (priv.tpbar.up != NULL) {
+        if (priv->tpbar.up != NULL) {
             progress->host[host].filescan = strtoll(line, NULL, 10);
             update = 2;
         }
         break;
     case 'U':
-        if (priv.tpbar.up != NULL) {
+        if (priv->tpbar.up != NULL) {
             progress->host[host].upload = strtoll(line, NULL, 10);
             update = 3;
         }
         break;
     case 'D':
-        if (priv.tpbar.up != NULL) {
+        if (priv->tpbar.up != NULL) {
             progress->host[host].downloaded = strtoll(line, NULL, 10);
             update = 3;
         }
         break;
     case 'R':
-        if (priv.tpbar.up != NULL) {
+        if (priv->tpbar.up != NULL) {
             progress->host[host].fileremove = strtoll(line, NULL, 10);
             update = 4;
         }
         break;
     case 'C':
-        if (priv.tpbar.up != NULL) {
+        if (priv->tpbar.up != NULL) {
             progress->host[host].filecopy = strtoll(line, NULL, 10);
             update = 4;
         }
@@ -192,67 +218,73 @@ void info_print(unsigned int host, const char *line) {
     }
     switch (update) {
     case  0:
-        s = buffer;
-        s += tpbar_setrow(s, INT_MAX, &priv.tpbar);
-        s += sprintf(s, "%s", line);
-        write(STDOUT_FILENO, buffer, s - buffer);
+        STR_INIT(buffer, str);
+        if (ISERR(tpbar_setrow(&buffer, INT_MAX, &priv->tpbar)) ||
+            ISERR(str_cats(&buffer, line, NULL)) )
+            break;
+        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
         break;
     case -1:
-        s = buffer;
-        s += tpbar_setrow(s, INT_MAX, &priv.tpbar);
-        s += sprintf(s, "%s", hostname[host]);
-        if (progress->sid == priv.sid[host])
-            s += sprintf(s, "%s -", progress->name);
-        s += sprintf(s, " %s", line);
-        write(STDOUT_FILENO, buffer, s - buffer);
+        STR_INIT(buffer, str);
+        if (ISERR(tpbar_setrow(&buffer, INT_MAX, &priv->tpbar)) ||
+            ISERR(str_cats(&buffer, hostname[host], NULL)) )
+            break;
+        if (progress->sid == priv->sid[host])
+            if (ISERR(str_cats(&buffer, progress->name, " - ", NULL)))
+                break;
+        if (ISERR(str_cats(&buffer, line, NULL)))
+            break;
+        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
         break;
     case  1:
-        s = buffer;
-        s += tpbar_setrow(s, progress->row, &priv.tpbar);
-        s += sprintf(s, "%s", progress->name);
-        write(STDOUT_FILENO, buffer, s - buffer);
+        STR_INIT(buffer, str);
+        if (ISERR(tpbar_setrow(&buffer, progress->row, &priv->tpbar)) ||
+            ISERR(str_cats(&buffer, progress->name, NULL)) )
+            break;
+        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
         break;
     case  2:
-        s = buffer;
-        s += tpbar_setrow(s, progress->row, &priv.tpbar);
-        s += sprintf(s, "%-*s ", (int)priv.namelen, progress->name);
-        s += tpbar_printf(s, 0, 1, &priv.tpbar, "[%24jd ]",
-                          progress->host[0].filescan + progress->host[1].filescan );
-        write(STDOUT_FILENO, buffer, s - buffer);
+        STR_INIT(buffer, str);
+        if (ISERR(tpbar_setrow(&buffer, progress->row, &priv->tpbar)) ||
+            ISERR(str_catf(&buffer, "%-*s ", (int)priv->namelen, progress->name)) ||
+            ISERR(tpbar_printf(&buffer, 0, 1, &priv->tpbar, "[%26jd ]",
+                               progress->host[0].filescan + progress->host[1].filescan )) )
+            break;
+        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
         break;
     case  3:
         n1 = progress->host[0].downloaded + progress->host[1].downloaded;
         n2 = progress->host[0].upload + progress->host[1].upload;
-        if (n1 > 0)
-            strfnum(buffer1, sizeof(buffer1)-1, n1);
-        else
-            *buffer1 = 0;
-        if (n2 > 0)
-            strfnum(buffer2, sizeof(buffer2)-1, n2);
-        else
-            *buffer2 = 0;
-        s = buffer;
-        s += tpbar_setrow(s, progress->row, &priv.tpbar);
-        s += sprintf(s, "%-*s ", (int)priv.namelen, progress->name);
-        s += tpbar_printf(s, n1, n2, &priv.tpbar, "[%11s /%11s ]", buffer1, buffer2);
-        write(STDOUT_FILENO, buffer, s - buffer);
+        STR_INIT(buffer, str1);
+        if (n1 > 0 && ISERR(str_catib(&buffer, buffer.size - 1, n1)))
+            break;
+        STR_INIT(buffer, str2);
+        if (n2 > 0 && ISERR(str_catib(&buffer, buffer.size - 1, n2)))
+            break;
+        STR_INIT(buffer, str);
+        if (ISERR(tpbar_setrow(&buffer, progress->row, &priv->tpbar)) ||
+            ISERR(str_catf(&buffer, "%-*s ", (int)priv->namelen, progress->name)) ||
+            ISERR(tpbar_printf(&buffer, n1, n2, &priv->tpbar, "[%12s /%12s ]",
+                               str1, str2 )) )
+            break;
+        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
         break;
     case  4:
         n1 = progress->host[0].fileremove + progress->host[1].fileremove;
         n2 = progress->host[0].filecopy + progress->host[1].filecopy;
-        if (n1 > 0)
-            snprintf(buffer1, sizeof(buffer1), "%+11jd", -n1);
-        else
-            *buffer1 = 0;
-        if (n2 > 0)
-            snprintf(buffer2, sizeof(buffer2), "%+11jd",  n2);
-        else
-            *buffer2 = 0;
-        s = buffer;
-        s += tpbar_setrow(s, progress->row, &priv.tpbar);
-        s += sprintf(s, "%-*s ", (int)priv.namelen, progress->name);
-        s += tpbar_printf(s, 1, 1, &priv.tpbar, "[%11s :%11s ]", buffer1, buffer2);
-        write(STDOUT_FILENO, buffer, s - buffer);
+        STR_INIT(buffer, str1);
+        if (n1 > 0 && ISERR(str_catf(&buffer, "%+12jd", -n1)))
+            break;
+        STR_INIT(buffer, str2);
+        if (n2 > 0 && ISERR(str_catf(&buffer, "%+12jd",  n2)))
+            break;
+        STR_INIT(buffer, str);
+        if (ISERR(tpbar_setrow(&buffer, progress->row, &priv->tpbar)) ||
+            ISERR(str_catf(&buffer, "%-*s ", (int)priv->namelen, progress->name)) ||
+            ISERR(tpbar_printf(&buffer, 1, 1, &priv->tpbar, "[%12s :%12s ]",
+                               str1, str2 )) )
+            break;
+        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
         break;
     }
 }

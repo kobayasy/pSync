@@ -1,4 +1,4 @@
-/* common.c - Last modified: 24-Jan-2026 (kobayasy)
+/* common.c - Last modified: 07-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -29,12 +29,99 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
+#include <sys/types.h>
 #ifdef POLL_TIMEOUT
 #include <poll.h>
 #endif  /* #ifdef POLL_TIMEOUT */
 #include "common.h"
+
+void str_init(STR *str, char *buffer, size_t size) {
+    str->e = str->s = buffer, str->size = size;
+    *str->s = 0;
+    str->hold = false;
+}
+
+int str_cats(STR *str, ...) {
+    int status = -1;
+    va_list ap;
+    struct {
+        size_t size;
+        char *e;
+    } tmp;
+    const char *arg;
+    size_t size;
+
+    va_start(ap, str);
+    tmp.size = str->size, tmp.e = str->e;
+    for (arg = va_arg(ap, const char *); arg != NULL; arg = va_arg(ap, const char *)) {
+        size = strlen(arg);
+        if (size >= tmp.size)
+            goto error;
+        strcpy(tmp.e, arg);
+        tmp.size -= size, tmp.e += size;
+    }
+    if (!str->hold)
+        str->size = tmp.size, str->e = tmp.e;
+    status = 0;
+error:
+    va_end(ap);
+    return status;
+}
+
+int str_catfv(STR *str, const char *format, va_list ap) {
+    int status = -1;
+    int size;
+
+    size = vsnprintf(str->e, str->size, format, ap);
+    if (size < 0 || size >= str->size)
+        goto error;
+    if (!str->hold)
+        str->size -= size, str->e += size;
+    status = 0;
+error:
+    return status;
+}
+
+int str_catf(STR *str, const char *format, ...) {
+    int status = -1;
+    va_list ap;
+
+    va_start(ap, format);
+    status = str_catfv(str, format, ap);
+    va_end(ap);
+    return status;
+}
+
+int str_catt(STR *str, const char *format, const struct tm *tm) {
+    int status = -1;
+    int size;
+
+    size = strftime(str->e, str->size, format, tm);
+    if (size == 0)
+        goto error;
+    if (!str->hold)
+        str->size -= size, str->e += size;
+    status = 0;
+error:
+    return status;
+}
+
+const char *basename_c(const char *path) {
+    const char *s = strrchr(path, '/');
+
+    if (s != NULL)
+        ++s;
+    else
+        s = path;
+    return s;
+}
 
 ssize_t write_size(int fd, const void *buf, size_t count) {
     ssize_t status = -1;

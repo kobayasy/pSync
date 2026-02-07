@@ -1,6 +1,6 @@
-/* tpbar.c - Last modified: 03-Feb-2024 (kobayasy)
+/* tpbar.c - Last modified: 07-Feb-2026 (kobayasy)
  *
- * Copyright (C) 2023-2024 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -29,47 +29,47 @@
 
 #include <limits.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef HAVE_TGETENT
 #include <termcap.h>
 #endif  /* #ifdef HAVE_TGETENT */
+#include "common.h"
 #include "tpbar.h"
 
 void tpbar_init(TPBAR *tpbar) {
 #ifdef HAVE_TGETENT
-    char ent[1024], *s;
+    char *s;
+    char ent[1024];
+    char *mr, *me;
+    STR str;
 #endif  /* #ifdef HAVE_TGETENT */
 
     tpbar->up = NULL;
     tpbar->co = -1;
     tpbar->bar = NULL;
+#ifdef HAVE_TGETENT
+    s = getenv("TERM");
+    if (s == NULL || tgetent(ent, s) != 1)
+        goto error;
+    s = tpbar->buffer;
+    tpbar->up = tgetstr("up", &s);
+    tpbar->co = tgetnum("co");
+    mr = tgetstr("mr", &s);
+    me = tgetstr("me", &s);
+    if (mr == NULL || me == NULL)
+        goto error;
+    str_init(&str, s, TPBAR_BUFFER_SIZE - (s - tpbar->buffer));
+    if (ISERR(str_cats(&str, mr, "%.*s", me, "%s", NULL)))
+        goto error;
+    tpbar->bar = str.s;
+error:
+#endif  /* #ifdef HAVE_TGETENT */
     tpbar->row.cur = 0;
     tpbar->row.min = INT_MAX;
     tpbar->row.max = INT_MIN;
-#ifdef HAVE_TGETENT
-    s = getenv("TERM");
-    if (s == NULL)
-        goto error;
-    if (tgetent(ent, s) != 1)
-        goto error;
-    tpbar->up = UP;
-    tpbar->co = tgetnum("co");
-    s = tpbar->buffer;
-    if (tgetstr("mr", &s) == NULL)
-        goto error;
-    --s;
-    s += sprintf(s, "%%.*s");
-    if (tgetstr("me", &s) == NULL)
-        goto error;
-    --s;
-    s += sprintf(s, "%%s");
-    tpbar->bar = tpbar->buffer;
-error:
-    ;
-#endif  /* #ifdef HAVE_TGETENT */
 }
 
 int tpbar_getrow(int row, TPBAR *tpbar) {
@@ -86,9 +86,8 @@ int tpbar_getrow(int row, TPBAR *tpbar) {
     return row;
 }
 
-int tpbar_setrow(char *str, int row, TPBAR *tpbar) {
-    int length = 0;
-    char *s;
+int tpbar_setrow(STR *str, int row, TPBAR *tpbar) {
+    int status = -1;
     int n;
 
     switch (row) {
@@ -97,50 +96,60 @@ int tpbar_setrow(char *str, int row, TPBAR *tpbar) {
         row = tpbar_getrow(row, tpbar);
         break;
     }
-    row -= tpbar->row.cur;
-    s = str;
-    if (row > 0) {
-        memset(s, '\n', row);
-        length += row, s += row;
-        *s = 0;
-        tpbar->row.cur += row;
-    }
+    n = row - tpbar->row.cur;
+    if (n > 0)
+        do {
+            if (ISERR(str_cats(str, "\n", NULL)))
+                goto error;
+        } while (--n > 0);
     else {
-        *s++ = '\r', ++length;
-        if (tpbar->up != NULL && row < 0) {
+        if (ISERR(str_cats(str, "\r", NULL)))
+            goto error;
+        if (tpbar->up != NULL && n < 0)
             do {
-                n = sprintf(s, "%s", tpbar->up);
-                length += n, s += n;
-                --tpbar->row.cur;
-            } while (++row < 0);
-        }
+                if (ISERR(str_cats(str, tpbar->up, NULL)))
+                    goto error;
+            } while (++n < 0);
     }
+    tpbar->row.cur = row;
     if (tpbar->row.cur < tpbar->row.min)
         tpbar->row.min = tpbar->row.cur;
     if (tpbar->row.cur > tpbar->row.max)
         tpbar->row.max = tpbar->row.cur;
-    return length;
+    status = 0;
+error:
+    return status;
 }
 
-int tpbar_printf(char *str, intmax_t current, intmax_t goal, TPBAR *tpbar,
+int tpbar_printf(STR *str, intmax_t current, intmax_t goal, TPBAR *tpbar,
                  const char *format, ... ) {
-    int length = -1;
+    int status = -1;
     va_list ap;
-    unsigned int n;
-    char *s;
+    STR head;
+    int n;
+    char *s = NULL;
 
     va_start(ap, format);
-    length = vsprintf(str, format, ap);
-    va_end(ap);
-    if (length < 0 || tpbar->bar == NULL)
-        n = 0;
-    else if (current < goal)
-        n = current * length / goal;
-    else
-        n = length;
-    if (n > 0 && (s = strdup(str)) != NULL) {
-        length = sprintf(str, tpbar->bar, n, s, s + n);
-        free(s);
+    head = *str;
+    if (ISERR(str_catfv(str, format, ap)))
+        goto error;
+    if (current >= 0 && tpbar->bar != NULL) {
+        n = str->e - head.e;
+        if (current < goal)
+            n = current * n / goal;
+        if (n > 0) {
+            s = strdup(head.e);
+            if (s != NULL) {
+                *str = head;
+                if (ISERR(str_catf(str, tpbar->bar, n, s, s + n)))
+                    goto error;
+                free(s), s = NULL;
+            }
+        }
     }
-    return length;
+    status = 0;
+error:
+    free(s);
+    va_end(ap);
+    return status;
 }

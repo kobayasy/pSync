@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 24-Jan-2026 (kobayasy)
+# configure.ac - Last modified: 07-Feb-2026 (kobayasy)
 #
 # Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -22,9 +22,9 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_PREREQ(2.72)
-AC_INIT([pSync], [3.7], [kobayasy@kobayasy.com], [psync])
+AC_INIT([pSync], [3.8], [kobayasy@kobayasy.com], [psync])
 AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
+AC_PREREQ(2.72)
 AC_CONFIG_SRCDIR([psync.c])
 AC_CONFIG_AUX_DIR([conf])
 
@@ -68,7 +68,7 @@ AS_VAR_IF([enableval], [no],
    [],
    [AC_CHECK_HEADERS([termcap.h],
        [AC_CHECK_FUNC([tgetent],
-           [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the `tgetent' function.])],
+           [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the 'tgetent' function.])],
            [AC_SEARCH_LIBS([tgetent], [tinfo ncurses],
                [AC_DEFINE([HAVE_TGETENT], [1])] )] )] )] )
 MY_ARG_WITH([conffile], [FILE], [configuration filename @{:@default: .psync.conf@:}@])
@@ -107,6 +107,5 @@ AC_CONFIG_HEADERS([config.h])
 AH_TOP([#ifndef _INCLUDE_config_h
 #define _INCLUDE_config_h])
 AH_BOTTOM([#endif  /* #ifndef _INCLUDE_config_h */])
-AX_APPEND_FLAG([-I.])
 AC_CONFIG_FILES([ja/psync.1 ja/psync.conf.5])
 AC_OUTPUT

@@ -1,4 +1,4 @@
-/* psync_psp.c - Last modified: 10-Jan-2026 (kobayasy)
+/* psync_psp.c - Last modified: 07-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -23,9 +23,14 @@
  * SOFTWARE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif  /* #ifdef HAVE_CONFIG_H */
+
 #include <limits.h>
 #include <signal.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

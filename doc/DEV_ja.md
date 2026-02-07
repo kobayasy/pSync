@@ -1,5 +1,5 @@
 <!--
-DEV_ja.md - Last modified: 24-Jan-2026 (kobayasy)
+DEV_ja.md - Last modified: 07-Feb-2026 (kobayasy)
 -->
 
 [技術資料](#技術資料) [
@@ -27,7 +27,7 @@ DEV_ja.md - Last modified: 24-Jan-2026 (kobayasy)
 | [progress.h](../src/progress.h)<br>[progress.c](../src/progress.c) | [進捗通知](#進捗状況出力フォーマット) |
 | [info.h](../src/info.h)<br>[info.c](../src/info.c) | [進捗表示](#進捗状況出力フォーマット) |
 | [tpbar.h](../src/tpbar.h)<br>[tpbar.c](../src/tpbar.c) | プログレスバー表示 |
-| [common.h](../src/common.h)<br>[common.c](../src/common.c) | エラー判定/分岐, 中断判定/分岐, 数値データシリアライズ/デシリアライズ, リスト処理 |
+| [common.h](../src/common.h)<br>[common.c](../src/common.c) | エラー判定/分岐, 中断判定/分岐, 文字列操作, 数値データシリアライズ/デシリアライズ, リスト処理 |
 | ja/ | 日本語manマニュアル |
 | &emsp;[psync.1.in](../src/ja/psync.1.in) | &emsp;psync.1 の生成元 |
 | &emsp;[psync.conf.5.in](../src/ja/psync.conf.5.in) | &emsp;psync.conf.5 の生成元 |
@@ -105,11 +105,10 @@ int main(int argc, char *argv[])
 GCCを使用する場合、以下のコマンドでビルドできます。
 ```sh
 gcc -pthread -o psync_example psync_example.c psync.c common.c progress.c
-
 ```
 以下にファイル同期の実行例を示します。
 実行すると、ディレクトリ `dir1` と `dir2` の内容が同期され、同一になります。
-```sh
+```
 $ mkdir dir1 dir2
 $ echo foo > dir1/file1
 $ echo bar > dir1/file2

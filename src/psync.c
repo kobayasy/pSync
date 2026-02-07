@@ -1,6 +1,6 @@
-/* psync.c - Last modified: 15-Nov-2025 (kobayasy)
+/* psync.c - Last modified: 07-Feb-2026 (kobayasy)
  *
- * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -38,11 +38,11 @@
 #include <time.h>
 #include <dirent.h>
 #include <fcntl.h>
-#include <libgen.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include "common.h"
 #include "progress.h"
 #include "psync.h"
@@ -217,34 +217,40 @@ typedef struct {
     time_t tlast;
     FLIST fsynced;
     FLIST flocal, fremote;
-    char dirname[1];
+    char dirname[];
 } PRIV;
 
 static int lock(PRIV *priv) {
     int status = INT_MIN;
-    char loadname[PATH_MAX], *p;
+    STR loadname;
+    char str[PATH_MAX];
 
-    p = loadname, p += sprintf(p, "%s/"SYNCDIR, priv->dirname);
-    mkdir(loadname, S_IRWXU);
-    strcpy(p, "/"LOCKDIR);
-    status = mkdir(loadname, S_IRWXU) == -1 ? 1 : 0;
+    STR_INIT(loadname, str);
+    ONERR(str_cats(&loadname, priv->dirname, "/"SYNCDIR, NULL), -1);
+    mkdir(loadname.s, S_IRWXU);
+    ONERR(str_cats(&loadname, "/"LOCKDIR, NULL), -1);
+    status = mkdir(loadname.s, S_IRWXU) == -1 ? 1 : 0;
+error:
     return status;
 }
 
 static int unlock(PRIV *priv) {
     int status = INT_MIN;
-    char loadname[PATH_MAX], *p;
-    char pathname[PATH_MAX], *name;
-    struct timeval tv[2];
+    STR pathname, loadname;
+    char str1[PATH_MAX], str2[PATH_MAX];
     struct tm tm;
+    struct timeval tv[2];
 
-    p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR, priv->dirname);
+    STR_INIT(pathname, str1);
+    STR_INIT(loadname, str2);
+    ONERR(str_cats(&pathname, priv->dirname, "/"SYNCDIR"/", NULL), -1);
+    ONERR(str_cats(&loadname, pathname.s, LOCKDIR, NULL), -1);
+    ONERR(str_catt(&pathname, BACKDIR, localtime_r(&priv->t, &tm)), -1);
     tv[0].tv_sec = priv->t, tv[0].tv_usec = 0;
     tv[1].tv_sec = priv->t, tv[1].tv_usec = 0;
-    utimes(loadname, tv);
-    name = pathname, name += sprintf(name, "%s/"SYNCDIR"/", priv->dirname);
-    strftime(name, sizeof(pathname) - (name - pathname), BACKDIR, localtime_r(&priv->t, &tm));
-    status = rename(loadname, pathname) == -1 ? 1 : 0;
+    utimes(loadname.s, tv);
+    status = rename(loadname.s, pathname.s) == -1 ? 1 : 0;
+error:
     return status;
 }
 
@@ -255,7 +261,7 @@ static PRIV *new_priv(const char *dirname,
 
     if (time(&t) == -1)
         goto error;
-    priv = malloc(offsetof(PRIV, dirname) + strlen(dirname) + 1);
+    priv = malloc(sizeof(*priv) + strlen(dirname) + 1);
     if (priv == NULL)
         goto error;
     strcpy(priv->dirname, dirname);
@@ -287,14 +293,16 @@ static void free_priv(PRIV *priv) {
 
 static int save_fsynced(PRIV *priv) {
     int status = INT_MIN;
-    char pathname[PATH_MAX];
+    STR pathname;
+    char str[PATH_MAX];
     int fd = -1;
     uint32_t id;
     struct timeval tv[2];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    sprintf(pathname, "%s/"SYNCDIR"/"LOCKDIR"/"LASTFILE, priv->dirname);
-    fd = creat(pathname, S_IRUSR|S_IWUSR);
+    STR_INIT(pathname, str);
+    ONERR(str_cats(&pathname, priv->dirname, "/"SYNCDIR"/"LOCKDIR"/"LASTFILE, NULL), ERROR_MEMORY);
+    fd = creat(pathname.s, S_IRUSR|S_IWUSR);
     if (fd == -1) {
         status = ERROR_DMAKE;
         goto error;
@@ -307,7 +315,7 @@ static int save_fsynced(PRIV *priv) {
     close(fd), fd = -1;
     tv[0].tv_sec = priv->t, tv[0].tv_usec = 0;
     tv[1].tv_sec = priv->t, tv[1].tv_usec = 0;
-    if (utimes(pathname, tv) == -1) {
+    if (utimes(pathname.s, tv) == -1) {
         status = ERROR_DWRITE;
         goto error;
     }
@@ -320,19 +328,21 @@ error:
 
 static int load_fsynced(PRIV *priv) {
     int status = INT_MIN;
+    STR pathname;
+    char str[PATH_MAX];
     struct stat st;
-    char pathname[PATH_MAX];
     int fd = -1;
     uint32_t id;
     int n;
 
     ONSTOP(priv->stop, ERROR_STOP);
-    sprintf(pathname, "%s/"SYNCDIR"/"LASTFILE, priv->dirname);
-    if (stat(pathname, &st) == -1) {
+    STR_INIT(pathname, str);
+    ONERR(str_cats(&pathname, priv->dirname, "/"SYNCDIR"/"LASTFILE, NULL), ERROR_MEMORY);
+    if (stat(pathname.s, &st) == -1) {
         status = ERROR_DREAD;
         goto error;
     }
-    fd = open(pathname, O_RDONLY);
+    fd = open(pathname.s, O_RDONLY);
     if (fd == -1) {
         status = ERROR_DOPEN;
         goto error;
@@ -352,7 +362,7 @@ error:
     return status;
 }
 
-static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *name,
+static int get_flocal_r(FLIST **flocal, FLIST **flast, STR pathname, char *name, const char *entname,
 #ifdef _INCLUDE_progress_h
                         PROGRESS *progress,
 #endif  /* #ifdef _INCLUDE_progress_h */
@@ -363,24 +373,24 @@ static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *nam
     int seek;
     FLIST *fprev;
     DIR *dir = NULL;
-    char *p;
     FLIST *fdir;
     struct dirent *ent;
 
-    if (lstat(pathname, &st) == -1) {
+    ONERR(str_cats(&pathname, entname, NULL), ERROR_MEMORY);
+    if (lstat(pathname.s, &st) == -1) {
         status = ERROR_SREAD;
         goto error;
     }
     switch (st.st_mode & S_IFMT) {
     case S_IFREG:
-        if (access(pathname, R_OK) != 0) {
+        if (access(pathname.s, R_OK) != 0) {
             status = ERROR_FPERM;
             goto error;
         }
         ltype = FST_LREG;
         break;
     case S_IFDIR:
-        if (access(pathname, R_OK|W_OK|X_OK) != 0) {
+        if (access(pathname.s, R_OK|W_OK|X_OK) != 0) {
             status = ERROR_FPERM;
             goto error;
         }
@@ -417,20 +427,19 @@ static int get_flocal_r(FLIST **flocal, FLIST **flast, char *pathname, char *nam
     (*flocal)->st.flags |= ltype;
     switch (ltype & FST_LTYPE) {
     case FST_LDIR:
-        dir = opendir(pathname);
+        dir = opendir(pathname.s);
         if (dir == NULL) {
             status = ERROR_FOPEN;
             goto error;
         }
-        p = name, p += strlen(p), *p++ = '/';
+        ONERR(str_cats(&pathname, "/", NULL), ERROR_MEMORY);
         fdir = *flocal;
         while ((ent = readdir(dir)) != NULL) {
             ONSTOP(stop, ERROR_STOP);
             if (!strcmp(ent->d_name, ".") ||
                 !strcmp(ent->d_name, "..") )
                 continue;
-            strcpy(p, ent->d_name);
-            if (ISERR(status = get_flocal_r(flocal, flast, pathname, name,
+            if (ISERR(status = get_flocal_r(flocal, flast, pathname, name, ent->d_name,
 #ifdef _INCLUDE_progress_h
                                             progress,
 #endif  /* #ifdef _INCLUDE_progress_h */
@@ -459,9 +468,10 @@ static int get_flocal(PRIV *priv) {
 #ifdef _INCLUDE_progress_h
     PROGRESS progress;
 #endif  /* #ifdef _INCLUDE_progress_h */
+    STR pathname;
+    char str[PATH_MAX];
     struct stat st;
     DIR *dir = NULL;
-    char pathname[PATH_MAX], *name;
     FLIST *flocal, *flast;
     struct dirent *ent;
 
@@ -469,13 +479,15 @@ static int get_flocal(PRIV *priv) {
 #ifdef _INCLUDE_progress_h
     progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'S');
 #endif  /* #ifdef _INCLUDE_progress_h */
-    if (stat(priv->dirname, &st) == -1) {
+    STR_INIT(pathname, str);
+    ONERR(str_cats(&pathname, priv->dirname, NULL), ERROR_MEMORY);
+    if (stat(pathname.s, &st) == -1) {
         status = ERROR_SREAD;
         goto error;
     }
     switch (st.st_mode & S_IFMT) {
     case S_IFDIR:
-        if (access(priv->dirname, R_OK|W_OK|X_OK) != 0) {
+        if (access(pathname.s, R_OK|W_OK|X_OK) != 0) {
             status = ERROR_FPERM;
             goto error;
         }
@@ -484,12 +496,12 @@ static int get_flocal(PRIV *priv) {
         status = ERROR_FTYPE;
         goto error;
     }
-    dir = opendir(priv->dirname);
+    dir = opendir(pathname.s);
     if (dir == NULL) {
         status = ERROR_FOPEN;
         goto error;
     }
-    name = pathname, name += sprintf(name, "%s/", priv->dirname);
+    ONERR(str_cats(&pathname, "/", NULL), ERROR_MEMORY);
     flocal = &priv->flocal, flast = &priv->fsynced;
     while ((ent = readdir(dir)) != NULL) {
         ONSTOP(priv->stop, ERROR_STOP);
@@ -497,8 +509,7 @@ static int get_flocal(PRIV *priv) {
             !strcmp(ent->d_name, "..") ||
             !strcmp(ent->d_name, SYNCDIR) )
             continue;
-        strcpy(name, ent->d_name);
-        if (ISERR(status = get_flocal_r(&flocal, &flast, pathname, name,
+        if (ISERR(status = get_flocal_r(&flocal, &flast, pathname, pathname.e, ent->d_name,
 #ifdef _INCLUDE_progress_h
                                         &progress,
 #endif  /* #ifdef _INCLUDE_progress_h */
@@ -507,7 +518,7 @@ static int get_flocal(PRIV *priv) {
                 switch (status) {
                 case ERROR_FTYPE:
                 case ERROR_FPERM:
-                    dprintf(priv->info, "!Unsupported file: %s\n", name);
+                    dprintf(priv->info, "!Unsupported file: %s\n", ent->d_name);
                     break;
                 }
             goto error;
@@ -603,8 +614,8 @@ static int preload(PRIV *priv) {
 #ifdef _INCLUDE_progress_h
     PROGRESS progress;
 #endif  /* #ifdef _INCLUDE_progress_h */
-    char pathname[PATH_MAX], *name;
-    char loadname[PATH_MAX], *p;
+    STR pathname, loadname;
+    char str1[PATH_MAX], str2[PATH_MAX];
     unsigned long count;
     FLIST *fsynced;
     char buffer[SYMLINK_MAX+1];
@@ -613,30 +624,34 @@ static int preload(PRIV *priv) {
 #ifdef _INCLUDE_progress_h
     progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'U');
 #endif  /* #ifdef _INCLUDE_progress_h */
-    name = pathname, name += sprintf(name, "%s/", priv->dirname);
-    p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
+    STR_INIT(pathname, str1);
+    STR_INIT(loadname, str2);
+    ONERR(str_cats(&pathname, priv->dirname, "/", NULL), ERROR_MEMORY);
+    ONERR(str_cats(&loadname, pathname.s, SYNCDIR"/"LOCKDIR"/", NULL), ERROR_MEMORY);
+    pathname.hold = true;
+    loadname.hold = true;
     count = 0;
     for (fsynced = priv->fsynced.next; *fsynced->name; fsynced = fsynced->next) {
         ONSTOP(priv->stop, ERROR_STOP);
         switch (fsynced->st.flags & (FST_UPLD|FST_LTYPE)) {
         case FST_UPLD|FST_LREG:
         case FST_UPLD|FST_LLNK:
-            strcpy(name, fsynced->name);
-            sprintf(p, UPFILE, ++count);
+            ONERR(str_cats(&pathname, fsynced->name, NULL), ERROR_MEMORY);
+            ONERR(str_catf(&loadname, UPFILE, ++count), ERROR_MEMORY);
             switch (fsynced->st.flags & FST_LTYPE) {
             case FST_LREG:
-                if (link(pathname, loadname) == -1) {
+                if (link(pathname.s, loadname.s) == -1) {
                     status = ERROR_FLINK;
                     goto error;
                 }
                 break;
             case FST_LLNK:
-                if (readlink(pathname, buffer, sizeof(buffer)) != fsynced->st.size) {
+                if (readlink(pathname.s, buffer, sizeof(buffer)) != fsynced->st.size) {
                     status = ERROR_FREAD;
                     goto error;
                 }
                 buffer[fsynced->st.size] = 0;
-                if (symlink(buffer, loadname) == -1) {
+                if (symlink(buffer, loadname.s) == -1) {
                     status = ERROR_FWRITE;
                     goto error;
                 }
@@ -658,7 +673,8 @@ error:
 
 static int upload(PRIV *priv) {
     int status = INT_MIN;
-    char loadname[PATH_MAX], *p;
+    STR loadname;
+    char str[PATH_MAX];
     unsigned long count;
     FLIST *fsynced;
     off_t size;
@@ -667,18 +683,20 @@ static int upload(PRIV *priv) {
     char buffer[LOADBUFFER_SIZE];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
+    STR_INIT(loadname, str);
+    ONERR(str_cats(&loadname, priv->dirname, "/"SYNCDIR"/"LOCKDIR"/", NULL), ERROR_MEMORY);
+    loadname.hold = true;
     count = 0;
     for (fsynced = priv->fsynced.next; *fsynced->name; fsynced = fsynced->next) {
         ONSTOP(priv->stop, ERROR_STOP);
         switch (fsynced->st.flags & (FST_UPLD|FST_LTYPE)) {
         case FST_UPLD|FST_LREG:
         case FST_UPLD|FST_LLNK:
-            sprintf(p, UPFILE, ++count);
+            ONERR(str_catf(&loadname, UPFILE, ++count), ERROR_MEMORY);
             size = fsynced->st.size;
             switch (fsynced->st.flags & FST_LTYPE) {
             case FST_LREG:
-                fd = open(loadname, O_RDONLY);
+                fd = open(loadname.s, O_RDONLY);
                 if (fd == -1) {
                     status = ERROR_FOPEN;
                     goto error;
@@ -699,7 +717,7 @@ static int upload(PRIV *priv) {
                 close(fd), fd = -1;
                 break;
             case FST_LLNK:
-                if (readlink(loadname, buffer, size) != size) {
+                if (readlink(loadname.s, buffer, size) != size) {
                     status = ERROR_FREAD;
                     goto error;
                 }
@@ -709,7 +727,7 @@ static int upload(PRIV *priv) {
                 }
                 break;
             }
-            if (unlink(loadname) == -1) {
+            if (unlink(loadname.s) == -1) {
                 status = ERROR_FREMOVE;
                 goto error;
             }
@@ -728,7 +746,8 @@ static int download(PRIV *priv) {
 #ifdef _INCLUDE_progress_h
     PROGRESS progress;
 #endif  /* #ifdef _INCLUDE_progress_h */
-    char loadname[PATH_MAX], *p;
+    STR loadname;
+    char str[PATH_MAX];
     unsigned long count;
     FLIST *fsynced;
     off_t size;
@@ -741,18 +760,20 @@ static int download(PRIV *priv) {
 #ifdef _INCLUDE_progress_h
     progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'D');
 #endif  /* #ifdef _INCLUDE_progress_h */
-    p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
+    STR_INIT(loadname, str);
+    ONERR(str_cats(&loadname, priv->dirname, "/"SYNCDIR"/"LOCKDIR"/", NULL), ERROR_MEMORY);
+    loadname.hold = true;
     count = 0;
     for (fsynced = priv->fsynced.next; *fsynced->name; fsynced = fsynced->next) {
         ONSTOP(priv->stop, ERROR_STOP);
         switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE)) {
         case FST_DNLD|FST_RREG:
         case FST_DNLD|FST_RLNK:
-            sprintf(p, DOWNFILE, ++count);
+            ONERR(str_catf(&loadname, DOWNFILE, ++count), ERROR_MEMORY);
             size = fsynced->st.size;
             switch (fsynced->st.flags & FST_RTYPE) {
             case FST_RREG:
-                fd = creat(loadname, S_IRUSR|S_IWUSR);
+                fd = creat(loadname.s, S_IRUSR|S_IWUSR);
                 if (fd == -1) {
                     status = ERROR_FMAKE;
                     goto error;
@@ -774,7 +795,7 @@ static int download(PRIV *priv) {
 #endif  /* #ifdef _INCLUDE_progress_h */
                 }
                 close(fd), fd = -1;
-                if (chmod(loadname, fsynced->st.mode & (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
+                if (chmod(loadname.s, fsynced->st.mode & (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
                     status = ERROR_SWRITE;
                     goto error;
                 }
@@ -789,7 +810,7 @@ static int download(PRIV *priv) {
                     goto error;
                 }
                 buffer[size] = 0;
-                if (symlink(buffer, loadname) == -1) {
+                if (symlink(buffer, loadname.s) == -1) {
                     status = ERROR_FWRITE;
                     goto error;
                 }
@@ -800,7 +821,7 @@ static int download(PRIV *priv) {
             }
             tv[0].tv_sec = fsynced->st.mtime, tv[0].tv_usec = 0;
             tv[1].tv_sec = fsynced->st.mtime, tv[1].tv_usec = 0;
-            if (lutimes(loadname, tv) == -1) {
+            if (lutimes(loadname.s, tv) == -1) {
                 status = ERROR_SWRITE;
                 goto error;
             }
@@ -819,8 +840,8 @@ error:
 
 static int commit(PRIV *priv) {
     int status = INT_MIN;
-    char pathname[PATH_MAX], *name;
-    char loadname[PATH_MAX], *p;
+    STR pathname, loadname;
+    char str1[PATH_MAX], str2[PATH_MAX];
 #ifdef _INCLUDE_progress_h
     PROGRESS progress;
 #endif  /* #ifdef _INCLUDE_progress_h */
@@ -829,8 +850,12 @@ static int commit(PRIV *priv) {
     struct timeval tv[2];
 
     ONSTOP(priv->stop, ERROR_STOP);
-    name = pathname, name += sprintf(name, "%s/", priv->dirname);
-    p = loadname, p += sprintf(p, "%s/"SYNCDIR"/"LOCKDIR"/", priv->dirname);
+    STR_INIT(pathname, str1);
+    STR_INIT(loadname, str2);
+    ONERR(str_cats(&pathname, priv->dirname, "/", NULL), ERROR_MEMORY);
+    ONERR(str_cats(&loadname, pathname.s, SYNCDIR"/"LOCKDIR"/", NULL), ERROR_MEMORY);
+    pathname.hold = true;
+    loadname.hold = true;
 #ifdef _INCLUDE_progress_h
     progress_init(&progress, 0, priv->info, PROGRESS_INTERVAL, 'R');
 #endif  /* #ifdef _INCLUDE_progress_h */
@@ -838,9 +863,9 @@ static int commit(PRIV *priv) {
     for (fsynced = priv->fsynced.prev; *fsynced->name; fsynced = fsynced->prev)
         switch (fsynced->st.flags & (FST_DNLD|FST_LTYPE)) {
         case FST_DNLD|FST_LREG:
-            strcpy(name, fsynced->name);
-            sprintf(p, BACKFILE, ++count, basename(name));
-            if (rename(pathname, loadname) == -1) {
+            ONERR(str_cats(&pathname, fsynced->name, NULL), ERROR_MEMORY);
+            ONERR(str_catf(&loadname, BACKFILE, ++count, basename_c(fsynced->name)), ERROR_MEMORY);
+            if (rename(pathname.s, loadname.s) == -1) {
                 status = ERROR_FMOVE;
                 goto error;
             }
@@ -849,8 +874,8 @@ static int commit(PRIV *priv) {
 #endif  /* #ifdef _INCLUDE_progress_h */
             break;
         case FST_DNLD|FST_LLNK:
-            strcpy(name, fsynced->name);
-            if (unlink(pathname) == -1) {
+            ONERR(str_cats(&pathname, fsynced->name, NULL), ERROR_MEMORY);
+            if (unlink(pathname.s) == -1) {
                 status = ERROR_FREMOVE;
                 goto error;
             }
@@ -863,8 +888,8 @@ static int commit(PRIV *priv) {
             case FST_RREG:
             case FST_RLNK:
             case 0:  /* deleted */
-                strcpy(name, fsynced->name);
-                if (rmdir(pathname) == -1) {
+                ONERR(str_cats(&pathname, fsynced->name, NULL), ERROR_MEMORY);
+                if (rmdir(pathname.s) == -1) {
                     status = ERROR_FREMOVE;
                     goto error;
                 }
@@ -881,9 +906,9 @@ static int commit(PRIV *priv) {
         switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE)) {
         case FST_DNLD|FST_RREG:
         case FST_DNLD|FST_RLNK:
-            strcpy(name, fsynced->name);
-            sprintf(p, DOWNFILE, ++count);
-            if (rename(loadname, pathname) == -1) {
+            ONERR(str_cats(&pathname, fsynced->name, NULL), ERROR_MEMORY);
+            ONERR(str_catf(&loadname, DOWNFILE, ++count), ERROR_MEMORY);
+            if (rename(loadname.s, pathname.s) == -1) {
                 status = ERROR_FMOVE;
                 goto error;
             }
@@ -896,15 +921,15 @@ static int commit(PRIV *priv) {
             case FST_LREG:
             case FST_LLNK:
             case 0:  /* deleted */
-                strcpy(name, fsynced->name);
-                if (mkdir(pathname, fsynced->st.mode & (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
+                ONERR(str_cats(&pathname, fsynced->name, NULL), ERROR_MEMORY);
+                if (mkdir(pathname.s, fsynced->st.mode & (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
                     status = ERROR_FMAKE;
                     goto error;
                 }
                 break;
             case FST_LDIR:
-                strcpy(name, fsynced->name);
-                if (chmod(pathname, fsynced->st.mode & (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
+                ONERR(str_cats(&pathname, fsynced->name, NULL), ERROR_MEMORY);
+                if (chmod(pathname.s, fsynced->st.mode & (S_IRWXU|S_IRWXG|S_IRWXO)) == -1) {
                     status = ERROR_SWRITE;
                     goto error;
                 }
@@ -918,18 +943,18 @@ static int commit(PRIV *priv) {
     for (fsynced = priv->fsynced.prev; *fsynced->name; fsynced = fsynced->prev)
         switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE)) {
         case FST_DNLD|FST_RDIR:
-            strcpy(name, fsynced->name);
+            ONERR(str_cats(&pathname, fsynced->name, NULL), ERROR_MEMORY);
             tv[0].tv_sec = fsynced->st.mtime, tv[0].tv_usec = 0;
             tv[1].tv_sec = fsynced->st.mtime, tv[1].tv_usec = 0;
-            if (lutimes(pathname, tv) == -1) {
+            if (lutimes(pathname.s, tv) == -1) {
                 status = ERROR_SWRITE;
                 goto error;
             }
             break;
         }
-    strcpy(name, SYNCDIR"/"LASTFILE);
-    strcpy(p, LASTFILE);
-    if (rename(loadname, pathname) == -1) {
+    ONERR(str_cats(&pathname, SYNCDIR"/"LASTFILE, NULL), ERROR_MEMORY);
+    ONERR(str_cats(&loadname, LASTFILE, NULL), ERROR_MEMORY);
+    if (rename(loadname.s, pathname.s) == -1) {
         status = ERROR_DWRITE;
         goto error;
     }
@@ -940,7 +965,8 @@ error:
 
 static int logging(PRIV *priv) {
     int status = INT_MIN;
-    char pathname[PATH_MAX];
+    STR pathname;
+    char str[PATH_MAX];
     FILE *fp = NULL;
     struct {
         unsigned long backup;
@@ -952,8 +978,9 @@ static int logging(PRIV *priv) {
     FLIST *fsynced;
 
     ONSTOP(priv->stop, ERROR_STOP);
-    sprintf(pathname, "%s/"SYNCDIR"/"LOCKDIR"/"LOGFILE, priv->dirname);
-    fp = fopen(pathname, "w");
+    STR_INIT(pathname, str);
+    ONERR(str_cats(&pathname, priv->dirname, "/"SYNCDIR"/"LOCKDIR"/"LOGFILE, NULL), ERROR_MEMORY);
+    fp = fopen(pathname.s, "w");
     if (fp == NULL) {
         status = ERROR_DMAKE;
         goto error;
@@ -998,8 +1025,7 @@ static int logging(PRIV *priv) {
         ONSTOP(priv->stop, ERROR_STOP);
         switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE|FST_LTYPE)) {
         case FST_DNLD|FST_LREG:
-            strcpy(pathname, fsynced->name);
-            fprintf(fp, "D %s -> %lu,%s\n", fsynced->name, count.backup--, basename(pathname));
+            fprintf(fp, "D %s -> %lu,%s\n", fsynced->name, count.backup--, basename_c(fsynced->name));
             break;
         case FST_DNLD|FST_LDIR:
             fprintf(fp, "D %s/\n", fsynced->name);
@@ -1027,24 +1053,21 @@ static int logging(PRIV *priv) {
         ONSTOP(priv->stop, ERROR_STOP);
         switch (fsynced->st.flags & (FST_DNLD|FST_RTYPE|FST_LTYPE)) {
         case FST_DNLD|FST_RREG|FST_LREG:
-            strcpy(pathname, fsynced->name);
-            fprintf(fp, "M %s -> %lu,%s\n", fsynced->name, count.backup--, basename(pathname));
+            fprintf(fp, "M %s -> %lu,%s\n", fsynced->name, count.backup--, basename_c(fsynced->name));
             break;
         case FST_DNLD|FST_RREG|FST_LDIR:
         case FST_DNLD|FST_RREG|FST_LLNK:
             fprintf(fp, "M %s\n", fsynced->name);
             break;
         case FST_DNLD|FST_RDIR|FST_LREG:
-            strcpy(pathname, fsynced->name);
-            fprintf(fp, "M %s/ -> %lu,%s\n", fsynced->name, count.backup--, basename(pathname));
+            fprintf(fp, "M %s/ -> %lu,%s\n", fsynced->name, count.backup--, basename_c(fsynced->name));
             break;
         case FST_DNLD|FST_RDIR|FST_LDIR:
         case FST_DNLD|FST_RDIR|FST_LLNK:
             fprintf(fp, "M %s/\n", fsynced->name);
             break;
         case FST_DNLD|FST_RLNK|FST_LREG:
-            strcpy(pathname, fsynced->name);
-            fprintf(fp, "M %s@ -> %lu,%s\n", fsynced->name, count.backup--, basename(pathname));
+            fprintf(fp, "M %s@ -> %lu,%s\n", fsynced->name, count.backup--, basename_c(fsynced->name));
             break;
         case FST_DNLD|FST_RLNK|FST_LDIR:
         case FST_DNLD|FST_RLNK|FST_LLNK:
@@ -1076,47 +1099,47 @@ error:
     return status;
 }
 
-static int clean_r(char *pathname, char *name,
+static int clean_r(STR pathname, const char *entname, time_t backup,
                    volatile sig_atomic_t *stop ) {
     int status = INT_MIN;
     struct stat st;
     DIR *dir = NULL;
     struct dirent *ent;
 
-    if (lstat(pathname, &st) == -1) {
+    ONERR(str_cats(&pathname, "/", entname, NULL), ERROR_MEMORY);
+    if (stat(pathname.s, &st) == -1) {
         status = ERROR_DREAD;
         goto error;
     }
-    switch (st.st_mode & S_IFMT) {
-    case S_IFDIR:
-        dir = opendir(pathname);
-        if (dir == NULL) {
-            status = ERROR_DOPEN;
-            goto error;
-        }
-        *name++ = '/';
-        while ((ent = readdir(dir)) != NULL) {
-            ONSTOP(stop, ERROR_STOP);
-            if (!strcmp(ent->d_name, ".") ||
-                !strcmp(ent->d_name, "..") )
-                continue;
-            strcpy(name, ent->d_name);
-            if (ISERR(status = clean_r(pathname, name + strlen(name), stop)))
+    if (backup == -1 || st.st_mtime < backup)
+        switch (st.st_mode & S_IFMT) {
+        case S_IFDIR:
+            dir = opendir(pathname.s);
+            if (dir == NULL) {
+                status = ERROR_DOPEN;
                 goto error;
+            }
+            while ((ent = readdir(dir)) != NULL) {
+                ONSTOP(stop, ERROR_STOP);
+                if (!strcmp(ent->d_name, ".") ||
+                    !strcmp(ent->d_name, "..") )
+                    continue;
+                if (ISERR(status = clean_r(pathname, ent->d_name, -1, stop)))
+                    goto error;
+            }
+            closedir(dir), dir = NULL;
+            ONERR(str_cats(&pathname, "", NULL), ERROR_MEMORY);
+            if (rmdir(pathname.s) == -1) {
+                status = ERROR_DREMOVE;
+                goto error;
+            }
+            break;
+        default:
+            if (unlink(pathname.s) == -1) {
+                status = ERROR_DREMOVE;
+                goto error;
+            }
         }
-        *--name = 0;
-        closedir(dir), dir = NULL;
-        if (rmdir(pathname) == -1) {
-            status = ERROR_DREMOVE;
-            goto error;
-        }
-        break;
-    default:
-        if (unlink(pathname) == -1) {
-            status = ERROR_DREMOVE;
-            goto error;
-        }
-    }
     status = 0;
 error:
     if (dir != NULL)
@@ -1125,19 +1148,19 @@ error:
 }
 static int clean(PRIV *priv) {
     int status = INT_MIN;
-    char pathname[PATH_MAX], *p;
+    STR pathname;
+    char str[PATH_MAX];
     DIR *dir = NULL;
     struct dirent *ent;
-    struct stat st;
  
     ONSTOP(priv->stop, ERROR_STOP);
-    p = pathname, p += sprintf(p, "%s/"SYNCDIR, priv->dirname);
-    dir = opendir(pathname);
+    STR_INIT(pathname, str);
+    ONERR(str_cats(&pathname, priv->dirname, "/"SYNCDIR, NULL), ERROR_MEMORY);
+    dir = opendir(pathname.s);
     if (dir == NULL) {
         status = ERROR_DOPEN;
         goto error;
     }
-    *p++ = '/';
     while ((ent = readdir(dir)) != NULL) {
         ONSTOP(priv->stop, ERROR_STOP);
         if (!strcmp(ent->d_name, ".") ||
@@ -1145,17 +1168,9 @@ static int clean(PRIV *priv) {
             !strcmp(ent->d_name, LASTFILE) ||
             !strcmp(ent->d_name, LOCKDIR) )
             continue;
-        strcpy(p, ent->d_name);
-        if (stat(pathname, &st) == -1) {
-            status = ERROR_DREAD;
-            goto error;
-        }
-        if (st.st_mtime > priv->backup)
-            continue;
-        if (ISERR(status = clean_r(pathname, p + strlen(p), priv->stop)))
+        if (ISERR(status = clean_r(pathname, ent->d_name, priv->backup, priv->stop)))
             goto error;
     }
-    *--p = 0;
     closedir(dir), dir = NULL;
     status = 0;
 error:

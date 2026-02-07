@@ -1,6 +1,6 @@
-/* psync.h - Last modified: 15-Nov-2025 (kobayasy)
+/* psync.h - Last modified: 07-Feb-2026 (kobayasy)
  *
- * Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+ * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation files
@@ -25,10 +25,6 @@
 
 #ifndef _INCLUDE_psync_h
 #define _INCLUDE_psync_h
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <signal.h>
 #include <time.h>

@@ -1,4 +1,4 @@
-/* main.c - Last modified: 24-Jan-2026 (kobayasy)
+/* main.c - Last modified: 07-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -28,15 +28,19 @@
 #endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <ctype.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <fcntl.h>
 #include <poll.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include "common.h"
 #include "psync_psp.h"
@@ -75,58 +79,74 @@ static struct {
 
 static void *info_thread(void *data) {
     int *infos = data;
-    struct pollfd fds[2];
+    struct pollfd fds[2] = {
+        {.fd = infos[0], .events = POLLIN},
+        {.fd = infos[1], .events = POLLIN}
+    };
+    void *p = NULL;
     unsigned int host;
-    char buffer[1024];
-    ssize_t size;
-    char *line, *s;
-    unsigned int n;
+    int fd = -1;
+    FILE *fp[2] = {NULL, NULL};
+    char *buffer = NULL;
+    size_t size = 0;
+    char *s, *e;
 
-    info_init(priv.namelen);
-    for (n = 0; n < 2; ++n)
-        fds[n].events = POLLIN;
-    while (n > 0) {
+    p = info_new(priv.namelen);
+    if (p == NULL)
+        goto error;
+    for (host = 0; host < sizeof(fds)/sizeof(*fds); ++host) {
+        fd = dup(fds[host].fd);
+        if (fd == -1)
+            goto error;
+        if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
+            goto error;
+        fp[host] = fdopen(fd, "r");
+        if (fp[host] == NULL)
+            goto error;
+        fd = -1;
+    }
+    while (fds[0].fd != -1 || fds[1].fd != -1) {
         if (ISSTOP(&priv.stop))
             goto error;
-        n = 0;
-        for (host = 0; host < 2; ++host)
-            if (infos[host] != -1) {
-                fds[n].fd = infos[host];
-                ++n;
+        switch (poll(fds, sizeof(fds)/sizeof(*fds), -1)) {
+        case -1:
+            switch (errno) {
+            case EINTR:
+                continue;
             }
-        if (!n)
-            continue;
-        if (poll(fds, n, -1) < 1)
+        case  0:
             goto error;
-        n = 0;
-        for (host = 0; host < 2; ++host)
-            if (infos[host] != -1) {
-                if (fds[n].revents & POLLIN) {
-                    size = read(infos[host], buffer, sizeof(buffer));
-                    switch (size) {
-                    case -1:
-                        goto error;
-                    case  0:  /* end of file */
-                        infos[host] = -1;
-                        break;
-                    default:
-                        if (size >= sizeof(buffer))  /* buffer overflow */
-                            break;
-                        buffer[size] = 0;
-                        s = buffer;
-                        while ((s = strchr(line = s, '\n')) != NULL) {
-                            *s++ = 0;
-                            info_print(host, line);
-                        }
-                    }
-                }
-                else if (fds[n].revents)
-                    infos[host] = -1;
-                ++n;
+        }
+        for (host = 0; host < sizeof(fds)/sizeof(*fds); ++host) {
+            if (fds[host].fd == -1 || !fds[host].revents)
+                continue;
+            if (!(fds[host].revents & POLLIN)) {
+                fds[host].fd = -1;
+                fclose(fp[host]), fp[host] = NULL;
+                continue;
             }
+            while (getline(&buffer, &size, fp[host]) != -1)
+                for (e = strchr(s = buffer, '\n'); e != NULL; e = strchr(s = e, '\n')) {
+                    *e++ = 0;
+                    info_print(p, host, s);
+                }
+            if (feof(fp[host])) {
+                fds[host].fd = -1;
+                fclose(fp[host]), fp[host] = NULL;
+                continue;
+            }
+        }
     }
-    info_print(0, ".");
+    info_print(p, 0, ".");
 error:
+    free(buffer);
+    for (host = 0; host < sizeof(fds)/sizeof(*fds); ++host)
+        if (fp[host] != NULL)
+            fclose(fp[host]);
+    if (fd != -1)
+        close(fd);
+    if (p != NULL)
+        info_free(p);
     return NULL;
 }
 
@@ -339,7 +359,8 @@ static int get_config(const char *confname, PSP *psp) {
     FILE *fp = NULL;
     PSP_CONFIG *head;
     unsigned int line;
-    char buffer[1024];
+    char *buffer = NULL;
+    size_t size = 0;
     char *name, *dirname, *s, *p;
     size_t l;
 
@@ -351,7 +372,7 @@ static int get_config(const char *confname, PSP *psp) {
     }
     head = psp_config("", NULL, psp);
     line = 0;
-    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+    while (getline(&buffer, &size, fp) != -1) {
         ++line;
         s = strchr(buffer, CONFEOL);
         if (s == NULL) {
@@ -403,8 +424,13 @@ static int get_config(const char *confname, PSP *psp) {
                 length = l;
         }
     }
+    if (!feof(fp)) {
+        status = ERROR_CONF;
+        goto error;
+    }
     status = length;
 error:
+    free(buffer);
     if (fp != NULL)
         fclose(fp);
     return status;

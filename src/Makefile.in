@@ -1,7 +1,7 @@
 # @configure_input@
-# Makefile.in - Last modified: 15-Nov-2025 (kobayasy)
+# Makefile.in - Last modified: 07-Feb-2026 (kobayasy)
 #
-# Copyright (C) 2018-2025 by Yuichi Kobayashi <kobayasy@kobayasy.com>
+# Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -51,11 +51,11 @@ all : $(TARGET)
 
 psync.@OBJEXT@ : psync.c common.h progress.h psync.h config.h
 common.@OBJEXT@ : common.c common.h config.h
-progress.@OBJEXT@ : progress.c progress.h
+progress.@OBJEXT@ : progress.c progress.h config.h
 psync_psp.@OBJEXT@ : psync_psp.c common.h psync.h psync_psp.h config.h
-popen3.@OBJEXT@ : popen3.c popen3.h
-tpbar.@OBJEXT@ : tpbar.c tpbar.h config.h
-info.@OBJEXT@ : info.c tpbar.h info.h config.h
+popen3.@OBJEXT@ : popen3.c popen3.h config.h
+tpbar.@OBJEXT@ : tpbar.c common.h tpbar.h config.h
+info.@OBJEXT@ : info.c common.h tpbar.h info.h config.h
 main.@OBJEXT@ : main.c common.h psync_psp.h psync.h popen3.h info.h config.h
 
 $(TARGET) : $(OBJS)
@@ -71,22 +71,18 @@ clean :
 distclean : clean
 	$(RM) config.log config.status config.cache
 	$(RM) config.h ja/psync.1 ja/psync.conf.5
-	test -n "`ls ja`" || rmdir ja
 	$(RM) Makefile
 
 install : install-bin install-man1ja install-man5ja
 
-install-bin : $(TARGET)
-	test -d $(DESTDIR)$(bindir) || $(INSTALL) -m755 -d $(DESTDIR)$(bindir)
-	$(INSTALL) -m755 -s $^ $(DESTDIR)$(bindir)
+install-bin : $(TARGET) $(DESTDIR)$(bindir)
+	$(INSTALL) -m755 -s $^
 
-install-man1ja : $(MAN1JA)
-	test -d $(DESTDIR)$(mandir)/ja/man1 || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man1
-	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man1
+install-man1ja : $(MAN1JA) $(DESTDIR)$(mandir)/ja/man1
+	$(INSTALL) -m644 $^
 
-install-man5ja : $(MAN5JA)
-	test -d $(DESTDIR)$(mandir)/ja/man5 || $(INSTALL) -m755 -d $(DESTDIR)$(mandir)/ja/man5
-	$(INSTALL) -m644 $^ $(DESTDIR)$(mandir)/ja/man5
+install-man5ja : $(MAN5JA) $(DESTDIR)$(mandir)/ja/man5
+	$(INSTALL) -m644 $^
 
 uninstall : uninstall-bin uninstall-man1ja uninstall-man5ja
 
@@ -98,3 +94,12 @@ uninstall-man1ja :
 
 uninstall-man5ja :
 	$(RM) $(addprefix $(DESTDIR)$(mandir)/ja/man5/,$(notdir $(MAN5JA)))
+
+$(DESTDIR)$(bindir) :
+	$(INSTALL) -m755 -d $@
+
+$(DESTDIR)$(mandir)/ja/man1 :
+	$(INSTALL) -m755 -d $@
+
+$(DESTDIR)$(mandir)/ja/man5 :
+	$(INSTALL) -m755 -d $@

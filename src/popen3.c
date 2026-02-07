@@ -1,4 +1,4 @@
-/* popen3.c - Last modified: 24-Jan-2026 (kobayasy)
+/* popen3.c - Last modified: 07-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -23,7 +23,12 @@
  * SOFTWARE.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif  /* #ifdef HAVE_CONFIG_H */
+
 #include <unistd.h>
+#include <sys/types.h>
 #include "popen3.h"
 
 int popen3(char *const argv[],
