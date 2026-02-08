@@ -1,5 +1,5 @@
 <!--
-README_ja.md - Last modified: 07-Feb-2026 (kobayasy)
+README_ja.md - Last modified: 08-Feb-2026 (kobayasy)
 -->
 
 [
@@ -17,7 +17,7 @@ README_ja.md - Last modified: 07-Feb-2026 (kobayasy)
 [![Linux](https://github.com/kobayasy/pSync/workflows/Linux/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-linux.yml)
 [![macOS](https://github.com/kobayasy/pSync/workflows/macOS/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-macos.yml)
 [![Windows](https://github.com/kobayasy/pSync/workflows/Windows/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/build-windows.yml)
-/
+<sup>|</sup>
 [![SAST](https://github.com/kobayasy/pSync/workflows/SAST/badge.svg)](https://github.com/kobayasy/pSync/actions/workflows/codeql-analysis.yml)
 
 <img src="psync.png" alt="pSync" align="right">
