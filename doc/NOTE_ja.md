@@ -1,9 +1,10 @@
 <!--
-NOTE_ja.md - Last modified: 07-Feb-2026 (kobayasy)
+NOTE_ja.md - Last modified: 10-Feb-2026 (kobayasy)
 -->
 
 [使い方のヒント](#使い方のヒント) [
 	[日本語マニュアル](#日本語マニュアル) |
+	[設定ファイルの設定例](#設定ファイルの設定例) |
 	[pSync を作った理由](#pSync-を作った理由) |
 	[パスワード入力の自動化](#パスワード入力の自動化) |
 	[ファイル更新があった時に psync を自動実行](#ファイル更新があった時に-psync-を自動実行)
@@ -32,6 +33,46 @@ man -M ~/share/man/ja 5 psync.conf
 ```
 macOSの場合、現時点(Tahoe 26.2)では `man` コマンドが日本語に対応していないため、正しい位置で改行されず読みにくいです。
 Homebrew などで対応版をインストールすることで解決できます。
+
+## 設定ファイルの設定例
+PCごとに必要なファイルだけを選んで同期するように設定できます。
+
+以下は、設定ファイル `~/.psync.conf` の設定例です。
+一部は省略していますが、実際に使用している設定に近い内容を紹介します。
+
+- インターネットサーバ(Linux)
+	- 全てのファイルを集約したい。
+```
+#Label  Directory       Comment
+env     pSync/ENV       # 各種設定ファイル集
+ptv     pSync/Private   # プライベートなファイル
+biz     pSync/Work      # 仕事のファイル
+src     src             # 趣味で作っているソフトウェアのソースコード
+www     /var/www        # インターネット公開しているWebページのファイル
+```
+
+- プライベートPC(macOS)
+	- どのPCでも同じ設定で使いたい。
+	- プライベートな時間に仕事のファイルは見たくない。
+	- インターネットサーバのWebページをリモートで編集したい。
+```
+#Label  Directory
+env     pSync/ENV
+ptv     pSync/Private
+www     Documents/www
+src     Documents/src
+```
+
+- 仕事用PC(Linux)
+	- どのPCでも同じ設定で使いたい。
+	- 集中の邪魔になるのでプライベートなファイルは見たくない。
+	- 趣味のソフトウェアも使える部分は仕事に流用したい。
+```
+#Label  Directory
+env     pSync/ENV
+biz     pSync/Work
+src     src
+```
 
 ## pSync を作った理由
 これは20年以上前の出来事です。
