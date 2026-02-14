@@ -1,4 +1,4 @@
-/* popen3.c - Last modified: 07-Feb-2026 (kobayasy)
+/* popen3.c - Last modified: 14-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -27,8 +27,10 @@
 #include <config.h>
 #endif  /* #ifdef HAVE_CONFIG_H */
 
+#include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include "popen3.h"
 
 int popen3(char *const argv[],
@@ -58,7 +60,13 @@ int popen3(char *const argv[],
         close(stdin_pipe[0]), stdin_pipe[0] = -1;
         close(stdout_pipe[1]), stdout_pipe[1] = -1;
         close(stderr_pipe[1]), stderr_pipe[1] = -1;
-        status = execvp(argv[0], argv);
+        execvp(argv[0], argv);
+        switch (errno) {
+        case ENOENT:
+            _exit(127);
+        default:
+            _exit(126);
+        }
     }
     else {
         close(stdin_pipe[0]), stdin_pipe[0] = -1;
@@ -82,5 +90,24 @@ error:
         close(stderr_pipe[0]);
     if (stderr_pipe[1] != -1)
         close(stderr_pipe[1]);
+    return status;
+}
+
+int waitexec(pid_t pid) {
+    int status = -1;
+    int exit_status;
+
+    if (pid == -1)
+        goto error;
+    if (pid == 0)
+        status = 0;
+    else {
+        while ((waitpid(pid, &exit_status, 0) == -1 && errno == EINTR) ||
+               WIFSTOPPED(exit_status) );
+        if (!WIFEXITED(exit_status))
+            goto error;
+        status = WEXITSTATUS(exit_status);
+    }
+error:
     return status;
 }

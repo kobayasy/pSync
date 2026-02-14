@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 07-Feb-2026 (kobayasy)
+# configure.ac - Last modified: 14-Feb-2026 (kobayasy)
 #
 # Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -22,7 +22,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT([pSync], [3.10], [kobayasy@kobayasy.com], [psync])
+AC_INIT([pSync], [3.11], [kobayasy@kobayasy.com], [psync])
 AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
 AC_PREREQ(2.72)
 AC_CONFIG_SRCDIR([psync.c])
@@ -60,6 +60,9 @@ AS_VAR_IF([enableval], [yes],
    [AX_CFLAGS_WARN_ALL] )
 AC_SYS_LARGEFILE
 AX_PTHREAD([LIBS="$PTHREAD_LIBS $LIBS" CFLAGS="$CFLAGS $PTHREAD_CFLAGS" CC="$PTHREAD_CC"])
+AC_CHECK_FUNC([lutimes],
+   [],
+   [AC_DEFINE([MISSING_LUTIMES], [1], [Define to 1 if you are missing the 'lutimes' function.])] )
 AC_CHECK_FUNC([clock_gettime],
    [],
    [AC_CHECK_LIB([rt], [clock_gettime])] )

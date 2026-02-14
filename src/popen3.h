@@ -1,4 +1,4 @@
-/* popen3.h - Last modified: 07-Feb-2026 (kobayasy)
+/* popen3.h - Last modified: 14-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -31,5 +31,6 @@
 extern int popen3(char *const argv[],
                   int (*func)(int fdin, int fdout, int fderr, pid_t pid, void *data),
                                                                          void *data );
+extern int waitexec(pid_t pid);
 
 #endif  /* #ifndef _INCLUDE_popen3_h */

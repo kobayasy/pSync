@@ -1,4 +1,4 @@
-/* main.c - Last modified: 07-Feb-2026 (kobayasy)
+/* main.c - Last modified: 14-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -41,7 +41,6 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include "common.h"
 #include "psync_psp.h"
 #include "popen3.h"
@@ -262,8 +261,8 @@ error:
         close(info_pipe[0]);
     if (info_pipe[1] != -1)
         close(info_pipe[1]);
-    if (pid != 0)
-        waitpid(pid, NULL, 0);
+    if (waitexec(pid) != 0 && !ISERR(status))
+        status = ERROR_SYSTEM;
     return status;
 }
 
@@ -280,8 +279,8 @@ static int run_remote(int fdin, int fdout, int info, pid_t pid, void *data) {
     status = psp_run(param->psp);
     sigactreset(&oldact);
 error:
-    if (pid != 0)
-        waitpid(pid, NULL, 0);
+    if (waitexec(pid) != 0 && !ISERR(status))
+        status = ERROR_SYSTEM;
     return status;
 }
 
@@ -362,6 +361,7 @@ static int get_config(const char *confname, PSP *psp) {
     char *buffer = NULL;
     size_t size = 0;
     char *name, *dirname, *s, *p;
+    char pathname[PATH_MAX];
     size_t l;
 
     fp = fopen(confname, "r");
@@ -414,7 +414,12 @@ static int get_config(const char *confname, PSP *psp) {
                 status = ERROR_CONF;
                 goto error;
             }
-            if (psp_config(name, dirname, psp) == NULL) {
+            if (realpath(dirname, pathname) == NULL) {
+                fprintf(stderr, "Error: Line %u in \"~/%s\": Directory not found \"%s\".\n", line, confname, dirname);
+                status = ERROR_CONF;
+                goto error;
+            }
+            if (psp_config(name, pathname, psp) == NULL) {
                 fprintf(stderr, "Error: Line %u in \"~/%s\": Redefined \"%s\".\n", line, confname, name);
                 status = ERROR_CONF;
                 goto error;

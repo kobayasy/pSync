@@ -1,4 +1,4 @@
-/* progress.c - Last modified: 07-Feb-2026 (kobayasy)
+/* progress.c - Last modified: 14-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -46,7 +46,7 @@ int progress_init(PROGRESS *progress, intmax_t update,
         progress->interval = interval;
         sprintf(progress->format, "%c%%+jd\n", id);
         progress->update = update;
-        if (clock_gettime(CLOCK_REALTIME, &now) == -1) {
+        if (clock_gettime(CLOCK_MONOTONIC, &now) == -1) {
             progress->fd = -1;
             goto error;
         }
@@ -64,7 +64,7 @@ int progress_update(PROGRESS *progress, intmax_t update) {
     if (progress->fd != -1) {
         progress->update += update;
         if (progress->update != progress->data) {
-            if (clock_gettime(CLOCK_REALTIME, &now) == -1)
+            if (clock_gettime(CLOCK_MONOTONIC, &now) == -1)
                 goto error;
             if (DIFFTS(now, progress->last) >= progress->interval) {
                 dprintf(progress->fd, progress->format, progress->update);

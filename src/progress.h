@@ -1,4 +1,4 @@
-/* progress.h - Last modified: 07-Feb-2026 (kobayasy)
+/* progress.h - Last modified: 14-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *

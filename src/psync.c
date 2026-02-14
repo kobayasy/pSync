@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 07-Feb-2026 (kobayasy)
+/* psync.c - Last modified: 14-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -63,6 +63,17 @@
 #undef LOADBUFFER_SIZE
 #define LOADBUFFER_SIZE SYMLINK_MAX
 #endif  /* #if LOADBUFFER_SIZE < SYMLINK_MAX */
+
+#ifdef MISSING_LUTIMES
+static int lutimes(const char *path, struct timeval times[2]) {
+    unsigned int n;
+    struct timespec ts[2];
+
+    for (n = 0; n < 2; ++n)
+        ts[n].tv_sec = times[n].tv_sec, ts[n].tv_nsec = times[n].tv_usec * 1000;
+    return utimensat(AT_FDCWD, path, ts, AT_SYMLINK_NOFOLLOW);
+}
+#endif  /* #ifdef MISSING_LUTIMES */
 
 #define FST_UPLD  0x08
 #define FST_DNLD  0x80
