@@ -1,4 +1,4 @@
-# configure.ac - Last modified: 14-Feb-2026 (kobayasy)
+# configure.ac - Last modified: 21-Feb-2026 (kobayasy)
 #
 # Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -22,7 +22,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-AC_INIT([pSync], [3.11], [kobayasy@kobayasy.com], [psync])
+AC_INIT([pSync], [3.12], [kobayasy@kobayasy.com], [psync])
 AC_COPYRIGHT([Copyright @{:@C@:}@ 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>])
 AC_PREREQ(2.72)
 AC_CONFIG_SRCDIR([psync.c])
@@ -32,7 +32,6 @@ AC_SUBST([CONFFILE], ['~/.psync.conf'])
 AC_SUBST([BACKUP], ['3'])
 AC_SUBST([EXPIRE], ['400'])
 AC_SUBST([SSH], ['ssh'])
-AC_SUBST([SSHOPTS], ['-qCp%u --'])
 AC_SUBST([SSHPORT], ['22'])
 
 AC_DEFUN([MY_ARG_ENABLE],
@@ -74,22 +73,22 @@ AS_VAR_IF([enableval], [no],
            [AC_DEFINE([HAVE_TGETENT], [1], [Define to 1 if you have the 'tgetent' function.])],
            [AC_SEARCH_LIBS([tgetent], [tinfo ncurses],
                [AC_DEFINE([HAVE_TGETENT], [1])] )] )] )] )
-MY_ARG_WITH([conffile], [FILE], [configuration filename @{:@default: .psync.conf@:}@])
+MY_ARG_WITH([conffile], [FILE], [configuration filename [.psync.conf]])
 AS_VAR_SET_IF([withval],
    [AC_DEFINE_UNQUOTED([CONFFILE], ["$withval"], [Configuration filename.])
     AS_CASE([$withval],
      [/*],
        [AC_SUBST([CONFFILE], [$withval])],
        [AC_SUBST([CONFFILE], ['~/'$withval])] ) ] )
-MY_ARG_WITH([backup], [DAYS], [retention period for backup files @{:@default: 3@:}@])
+MY_ARG_WITH([backup], [DAYS], [retention period for backup files [3]])
 AS_VAR_SET_IF([withval],
    [AC_DEFINE_UNQUOTED([BACKUP_DEFAULT], [@{:@$withval*24*60*60@:}@], [Retention period for backup files in seconds.])
     AC_SUBST([BACKUP], [$withval]) ] )
-MY_ARG_WITH([expire], [DAYS], [retention period for file information @{:@default: 400@:}@])
+MY_ARG_WITH([expire], [DAYS], [retention period for file information [400]])
 AS_VAR_SET_IF([withval],
    [AC_DEFINE_UNQUOTED([EXPIRE_DEFAULT], [@{:@$withval*24*60*60@:}@], [Retention period for file information in seconds.])
     AC_SUBST([EXPIRE], [$withval]) ] )
-MY_ARG_WITH([ssh], [FILE], [executable filename for SSH @{:@default: ssh@:}@])
+MY_ARG_WITH([ssh], [FILE], [executable filename for SSH [ssh]])
 AS_VAR_SET_IF([withval],
    [AC_DEFINE_UNQUOTED([SSH], ["$withval"], [Executable filename for SSH.])
     AC_SUBST([SSH], [$withval])
@@ -97,13 +96,16 @@ AS_VAR_SET_IF([withval],
      [/*],
        [AC_SUBST([SSH_RPATH], ['./" '])],
        [AC_SUBST([SSH_APATH], ['./" '])] ) ] )
-MY_ARG_WITH([sshopts], [OPTS], [command line options for SSH @{:@default: -qCp%u --@:}@])
+MY_ARG_WITH([sshopts], [OPTS], [command line options for SSH [-qCp%u --]])
 AS_VAR_SET_IF([withval],
    [AC_DEFINE_UNQUOTED([SSHOPTS], ["$withval"], [Command line options to enable quiet and compress, and set port for SSH.])] )
-MY_ARG_WITH([sshport], [PORT], [default port number for SSH @{:@default: 22@:}@])
+MY_ARG_WITH([sshport], [PORT], [default port number for SSH [22]])
 AS_VAR_SET_IF([withval],
    [AC_DEFINE_UNQUOTED([SSHPORT], [$withval], [Default port number for SSH.])
     AC_SUBST([SSHPORT], [$withval]) ] )
+MY_ARG_WITH([timeout], [SECS], [communication timeout [disabled]])
+AS_VAR_SET_IF([withval],
+   [AC_DEFINE_UNQUOTED([POLL_TIMEOUT], [$withval], [Communication timeout in seconds.])] )
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_HEADERS([config.h])

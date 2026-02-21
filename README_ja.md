@@ -1,5 +1,5 @@
 <!--
-README_ja.md - Last modified: 14-Feb-2026 (kobayasy)
+README_ja.md - Last modified: 17-Feb-2026 (kobayasy)
 -->
 
 [
@@ -61,9 +61,9 @@ README_ja.md - Last modified: 14-Feb-2026 (kobayasy)
 同期元と同期先で違いはなく同じ作業になります。
 1. 以下のコマンドでビルドとインストールを実行します。
 ```sh
-curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.11/psync-3.11.tar.gz
-tar xzf psync-3.11.tar.gz
-cd psync-3.11
+curl -LOJs https://github.com/kobayasy/pSync/releases/download/3.12/psync-3.12.tar.gz
+tar xzf psync-3.12.tar.gz
+cd psync-3.12
 ./configure --prefix=$HOME
 make install
 ```

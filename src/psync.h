@@ -1,4 +1,4 @@
-/* psync.h - Last modified: 14-Feb-2026 (kobayasy)
+/* psync.h - Last modified: 21-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *

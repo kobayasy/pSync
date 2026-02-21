@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 14-Feb-2026 (kobayasy)
+/* psync.c - Last modified: 21-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -240,7 +240,10 @@ static int lock(PRIV *priv) {
     ONERR(str_cats(&loadname, priv->dirname, "/"SYNCDIR, NULL), -1);
     mkdir(loadname.s, S_IRWXU);
     ONERR(str_cats(&loadname, "/"LOCKDIR, NULL), -1);
-    status = mkdir(loadname.s, S_IRWXU) == -1 ? 1 : 0;
+    if (mkdir(loadname.s, S_IRWXU) != -1)
+        status = 0;
+    else
+        status = 1;
 error:
     return status;
 }
@@ -260,7 +263,15 @@ static int unlock(PRIV *priv) {
     tv[0].tv_sec = priv->t, tv[0].tv_usec = 0;
     tv[1].tv_sec = priv->t, tv[1].tv_usec = 0;
     utimes(loadname.s, tv);
-    status = rename(loadname.s, pathname.s) == -1 ? 1 : 0;
+    if (rename(loadname.s, pathname.s) != -1)
+        status = 0;
+    else {
+        ONERR(str_catf(&pathname, "~%d", getpid()), -1);
+        if (rename(loadname.s, pathname.s) != -1)
+            status = 0;
+        else
+            status = 1;
+    }
 error:
     return status;
 }
