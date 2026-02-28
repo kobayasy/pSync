@@ -1,4 +1,4 @@
-/* main.c - Last modified: 14-Feb-2026 (kobayasy)
+/* main.c - Last modified: 28-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -91,7 +91,7 @@ static void *info_thread(void *data) {
     char *s, *e;
 
     p = info_new(priv.namelen);
-    if (p == NULL)
+    if (!p)
         goto error;
     for (host = 0; host < sizeof(fds)/sizeof(*fds); ++host) {
         fd = dup(fds[host].fd);
@@ -100,7 +100,7 @@ static void *info_thread(void *data) {
         if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
             goto error;
         fp[host] = fdopen(fd, "r");
-        if (fp[host] == NULL)
+        if (!fp[host])
             goto error;
         fd = -1;
     }
@@ -125,7 +125,7 @@ static void *info_thread(void *data) {
                 continue;
             }
             while (getline(&buffer, &size, fp[host]) != -1)
-                for (e = strchr(s = buffer, '\n'); e != NULL; e = strchr(s = e, '\n')) {
+                for (e = strchr(s = buffer, '\n'); e; e = strchr(s = e, '\n')) {
                     *e++ = 0;
                     info_print(p, host, s);
                 }
@@ -140,11 +140,11 @@ static void *info_thread(void *data) {
 error:
     free(buffer);
     for (host = 0; host < sizeof(fds)/sizeof(*fds); ++host)
-        if (fp[host] != NULL)
+        if (fp[host])
             fclose(fp[host]);
     if (fd != -1)
         close(fd);
-    if (p != NULL)
+    if (p)
         info_free(p);
     return NULL;
 }
@@ -297,14 +297,14 @@ static int run(PSP *psp, bool verbose, char *hostname) {
     char *argv[64];
     char *s, *p;
 
-    if (hostname != NULL) {
+    if (hostname) {
         s = strchr(hostname, '@');
-        if (s != NULL)
+        if (s)
             ++s;
         else
             s = hostname;
         s = strrchr(s, '#');
-        if (s != NULL) {
+        if (s) {
             *s++ = 0;
             if (!*s) {
                 status = ERROR_ARGS;
@@ -325,7 +325,7 @@ static int run(PSP *psp, bool verbose, char *hostname) {
         snprintf(opts, sizeof(opts), SSHOPTS, (unsigned int)port);
         argc = 0;
         argv[argc++] = SSH;
-        for (s = strtok(opts, ARGVTOK); s != NULL; s = strtok(NULL, ARGVTOK))
+        for (s = strtok(opts, ARGVTOK); s; s = strtok(NULL, ARGVTOK))
             argv[argc++] = s;
         argv[argc++] = hostname;
         argv[argc++] = PACKAGE_TARNAME" --remote";
@@ -365,7 +365,7 @@ static int get_config(const char *confname, PSP *psp) {
     size_t l;
 
     fp = fopen(confname, "r");
-    if (fp == NULL) {
+    if (!fp) {
         fprintf(stderr, "Error: Can not open \"~/%s\".\n", confname);
         status = ERROR_CONF;
         goto error;
@@ -375,14 +375,14 @@ static int get_config(const char *confname, PSP *psp) {
     while (getline(&buffer, &size, fp) != -1) {
         ++line;
         s = strchr(buffer, CONFEOL);
-        if (s == NULL) {
+        if (!s) {
             fprintf(stderr, "Error: Line %u: No end of line.\n", line);
             status = ERROR_CONF;
             goto error;
         }
         *s = 0;
         s = strchr(buffer, CONFREM);
-        if (s != NULL)
+        if (s)
             *s = 0;
         name = strtrim(buffer);
         if (!*name)
@@ -391,7 +391,7 @@ static int get_config(const char *confname, PSP *psp) {
         while (*++s && !isspace(*s));
         dirname = strtrim(s);
         s = strchr(name, CONFVAR);
-        if (s != NULL) {
+        if (s) {
             if (*dirname) {
                 fprintf(stderr, "Error: Line %u in \"~/%s\": Too many parameters \"%s\".\n", line, confname, dirname);
                 status = ERROR_CONF;
@@ -402,7 +402,7 @@ static int get_config(const char *confname, PSP *psp) {
                 head->expire = strtoul(s, &p, 10) * 60*60*24;
             else if (!strcmp(name, "backup"))
                 head->backup = strtoul(s, &p, 10) * 60*60*24;
-            if (p == NULL || *p) {
+            if (!p || *p) {
                 fprintf(stderr, "Error: Line %u in \"~/%s\": Invalid parameter \"%s%c%s\".\n", line, confname, name, CONFVAR, s);
                 status = ERROR_CONF;
                 goto error;
@@ -414,12 +414,12 @@ static int get_config(const char *confname, PSP *psp) {
                 status = ERROR_CONF;
                 goto error;
             }
-            if (realpath(dirname, pathname) == NULL) {
+            if (!realpath(dirname, pathname)) {
                 fprintf(stderr, "Error: Line %u in \"~/%s\": Directory not found \"%s\".\n", line, confname, dirname);
                 status = ERROR_CONF;
                 goto error;
             }
-            if (psp_config(name, pathname, psp) == NULL) {
+            if (!psp_config(name, pathname, psp)) {
                 fprintf(stderr, "Error: Line %u in \"~/%s\": Redefined \"%s\".\n", line, confname, name);
                 status = ERROR_CONF;
                 goto error;
@@ -436,7 +436,7 @@ static int get_config(const char *confname, PSP *psp) {
     status = length;
 error:
     free(buffer);
-    if (fp != NULL)
+    if (fp)
         fclose(fp);
     return status;
 }
@@ -455,7 +455,7 @@ static int get_opts(char *argv[], OPTS *opts) {
     bool remote = false;
     char *s;
 
-    while (*++argv != NULL)
+    while (*++argv)
         switch (**argv) {
         case '-':
             s = *argv;
@@ -498,7 +498,7 @@ static int get_opts(char *argv[], OPTS *opts) {
             }
             break;
         default:
-            if (opts->hostname != NULL) {
+            if (opts->hostname) {
                 fprintf(stderr, "Error: Invalid argument: %s\n", *argv);
                 status = ERROR_ARGS;
                 goto error;
@@ -508,14 +508,14 @@ static int get_opts(char *argv[], OPTS *opts) {
     switch (opts->command) {
     case RUN:
         if (remote) {
-            if (opts->hostname != NULL) {
+            if (opts->hostname) {
                 fprintf(stderr, "Error: HOST is not required\n");
                 status = ERROR_ARGS;
                 goto error;
             }
         }
         else {
-            if (opts->hostname == NULL) {
+            if (!opts->hostname) {
                 fprintf(stderr, "Error: HOST is required\n");
                 status = ERROR_ARGS;
                 goto error;
@@ -565,7 +565,7 @@ int main(int argc, char *argv[]) {
     char *s;
 
     s = getenv("HOME");
-    if (s == NULL) {
+    if (!s) {
         fprintf(stderr, "Error: $HOME is not set.\n");
         status = ERROR_ENVS;
         goto error;
@@ -576,7 +576,7 @@ int main(int argc, char *argv[]) {
         goto error;
     }
     psp = psp_new(&priv.stop);
-    if (psp == NULL) {
+    if (!psp) {
         fprintf(stderr, "Error: Out of memory.\n");
         status = ERROR_MEMORY;
         goto error;
@@ -602,7 +602,7 @@ int main(int argc, char *argv[]) {
         status = usage(stdout);
     }
 error:
-    if (psp != NULL)
+    if (psp)
         psp_free(psp);
     if (ISERR(status))
         status = status < -255 ? 255 : -status;

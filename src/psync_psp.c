@@ -1,4 +1,4 @@
-/* psync_psp.c - Last modified: 07-Feb-2026 (kobayasy)
+/* psync_psp.c - Last modified: 28-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -64,7 +64,7 @@ static CLIST *add_CLIST(CLIST *clist, const char *name, const char *dirname) {
         goto error;
     length = strlen(name) + 1;
     cnew = malloc(offsetof(CLIST, name) + length + strlen(dirname) + 1);
-    if (cnew == NULL)
+    if (!cnew)
         goto error;
     strcpy(cnew->name, name);
     cnew->dirname = strcpy(cnew->name + length, dirname);
@@ -120,7 +120,7 @@ static int read_CLIST(CLIST *clist, int fd,
     while (length > 0) {
         ONSTOP(stop, -1);
         name = malloc(length + 1);
-        if (name == NULL) {
+        if (!name) {
             status = -1;
             goto error;
         }
@@ -130,7 +130,7 @@ static int read_CLIST(CLIST *clist, int fd,
         }
         name[length] = 0;
         clist = add_CLIST(clist, name, "");
-        if (clist == NULL) {
+        if (!clist) {
             status = -1;
             goto error;
         }
@@ -164,7 +164,7 @@ static PRIV *new_priv(volatile sig_atomic_t *stop) {
     PRIV *priv = NULL;
 
     priv = malloc(sizeof(PRIV));
-    if (priv == NULL)
+    if (!priv)
         goto error;
     priv->fdin = -1, priv->fdout = -1;
     priv->info = -1;
@@ -193,7 +193,7 @@ static CLIST *add_config(const char *name, const char *dirname, PRIV *priv) {
     if (!seek)
         goto error;
     config = add_CLIST(priv->config, name, dirname);
-    if (config == NULL)
+    if (!config)
         goto error;
     config->expire = priv->clocal.expire;
     config->backup = priv->clocal.backup;
@@ -238,7 +238,7 @@ static int psync(PRIV *priv, CLIST *config) {
     int ack_local, ack_remote, n;
 
     psync = psync_new(config->dirname, priv->stop);
-    n = ack_local = psync == NULL ? -1 : 0;
+    n = ack_local = psync ? 0 : -1;
     WRITE_ONERR(n, priv->fdout, write_size, ERROR_PROTOCOL);
     READ_ONERR(ack_remote, priv->fdin, read_size, ERROR_PROTOCOL);
     if (!ack_local) {
@@ -256,7 +256,7 @@ static int psync(PRIV *priv, CLIST *config) {
     else
         status = ERROR_NOTREADYLOCAL;
 error:
-    if (psync != NULL)
+    if (psync)
         psync_free(psync);
     return status;
 }
@@ -342,8 +342,8 @@ void psp_free(PSP *psp) {
 PSP_CONFIG *psp_config(const char *name, const char *dirname, PSP *psp) {
     CLIST *config;
 
-    config = dirname == NULL ? seek_config(name, (PRIV *)psp) : add_config(name, dirname, (PRIV *)psp);
-    return config != NULL ? (PSP_CONFIG *)&config->dirname : NULL;
+    config = dirname ? add_config(name, dirname, (PRIV *)psp) : seek_config(name, (PRIV *)psp);
+    return config ? (PSP_CONFIG *)&config->dirname : NULL;
 }
 
 int psp_run(PSP *psp) {

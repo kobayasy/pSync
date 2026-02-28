@@ -1,4 +1,4 @@
-/* info.h - Last modified: 07-Feb-2026 (kobayasy)
+/* info.h - Last modified: 28-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *

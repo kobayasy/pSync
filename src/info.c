@@ -1,4 +1,4 @@
-/* info.c - Last modified: 07-Feb-2026 (kobayasy)
+/* info.c - Last modified: 28-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -133,7 +133,7 @@ void *info_new(size_t namelen) {
     unsigned int host;
 
     priv = malloc(sizeof(*priv) + (namelen + 1) * 2);
-    if (priv == NULL)
+    if (!priv)
         goto error;
     for (host = 0; host < 2; ++host) {
         priv->sid[host] = 0;
@@ -169,7 +169,7 @@ void info_print(void *p, unsigned int host, const char *line) {
         update = 0;
         break;
     case '!':
-        if (strchr("+-", *line) != NULL)
+        if (strchr("+-", *line))
             line = strmes(strtol(line, NULL, 10));
         update = -1;
         break;
@@ -186,31 +186,31 @@ void info_print(void *p, unsigned int host, const char *line) {
         ++priv->sid[host];
         break;
     case 'S':
-        if (priv->tpbar.up != NULL) {
+        if (priv->tpbar.up) {
             progress->host[host].filescan = strtoll(line, NULL, 10);
             update = 2;
         }
         break;
     case 'U':
-        if (priv->tpbar.up != NULL) {
+        if (priv->tpbar.up) {
             progress->host[host].upload = strtoll(line, NULL, 10);
             update = 3;
         }
         break;
     case 'D':
-        if (priv->tpbar.up != NULL) {
+        if (priv->tpbar.up) {
             progress->host[host].downloaded = strtoll(line, NULL, 10);
             update = 3;
         }
         break;
     case 'R':
-        if (priv->tpbar.up != NULL) {
+        if (priv->tpbar.up) {
             progress->host[host].fileremove = strtoll(line, NULL, 10);
             update = 4;
         }
         break;
     case 'C':
-        if (priv->tpbar.up != NULL) {
+        if (priv->tpbar.up) {
             progress->host[host].filecopy = strtoll(line, NULL, 10);
             update = 4;
         }

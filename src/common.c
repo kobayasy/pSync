@@ -1,4 +1,4 @@
-/* common.c - Last modified: 07-Feb-2026 (kobayasy)
+/* common.c - Last modified: 28-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -60,7 +60,7 @@ int str_cats(STR *str, ...) {
 
     va_start(ap, str);
     tmp.size = str->size, tmp.e = str->e;
-    for (arg = va_arg(ap, const char *); arg != NULL; arg = va_arg(ap, const char *)) {
+    while (arg = va_arg(ap, const char *), arg) {
         size = strlen(arg);
         if (size >= tmp.size)
             goto error;
@@ -116,7 +116,7 @@ error:
 const char *basename_c(const char *path) {
     const char *s = strrchr(path, '/');
 
-    if (s != NULL)
+    if (s)
         ++s;
     else
         s = path;

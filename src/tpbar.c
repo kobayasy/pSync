@@ -1,4 +1,4 @@
-/* tpbar.c - Last modified: 07-Feb-2026 (kobayasy)
+/* tpbar.c - Last modified: 28-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -52,14 +52,14 @@ void tpbar_init(TPBAR *tpbar) {
     tpbar->bar = NULL;
 #ifdef HAVE_TGETENT
     s = getenv("TERM");
-    if (s == NULL || tgetent(ent, s) != 1)
+    if (!s || tgetent(ent, s) != 1)
         goto error;
     s = tpbar->buffer;
     tpbar->up = tgetstr("up", &s);
     tpbar->co = tgetnum("co");
     mr = tgetstr("mr", &s);
     me = tgetstr("me", &s);
-    if (mr == NULL || me == NULL)
+    if (!mr || !me)
         goto error;
     str_init(&str, s, TPBAR_BUFFER_SIZE - (s - tpbar->buffer));
     if (ISERR(str_cats(&str, mr, "%.*s", me, "%s", NULL)))
@@ -105,7 +105,7 @@ int tpbar_setrow(STR *str, int row, TPBAR *tpbar) {
     else {
         if (ISERR(str_cats(str, "\r", NULL)))
             goto error;
-        if (tpbar->up != NULL && n < 0)
+        if (tpbar->up && n < 0)
             do {
                 if (ISERR(str_cats(str, tpbar->up, NULL)))
                     goto error;
@@ -133,13 +133,13 @@ int tpbar_printf(STR *str, intmax_t current, intmax_t goal, TPBAR *tpbar,
     head = *str;
     if (ISERR(str_catfv(str, format, ap)))
         goto error;
-    if (current >= 0 && tpbar->bar != NULL) {
+    if (current >= 0 && tpbar->bar) {
         n = str->e - head.e;
         if (current < goal)
             n = current * n / goal;
         if (n > 0) {
             s = strdup(head.e);
-            if (s != NULL) {
+            if (s) {
                 *str = head;
                 if (ISERR(str_catf(str, tpbar->bar, n, s, s + n)))
                     goto error;

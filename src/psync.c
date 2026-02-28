@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 21-Feb-2026 (kobayasy)
+/* psync.c - Last modified: 28-Feb-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -110,7 +110,7 @@ static FLIST *add_FLIST(FLIST *flist, const char *name) {
     if (!*name)
         goto error;
     fnew = malloc(offsetof(FLIST, name) + strlen(name) + 1);
-    if (fnew == NULL)
+    if (!fnew)
         goto error;
     strcpy(fnew->name, name);
     memset(&fnew->st, 0, sizeof(fnew->st));
@@ -183,7 +183,7 @@ static int read_FLIST(bool synced, FLIST *flist, int fd,
         }
         dirname[length] = 0;
         flist = add_FLIST(flist, dirname);
-        if (flist == NULL) {
+        if (!flist) {
             status = -1;
             goto error;
         }
@@ -284,7 +284,7 @@ static PRIV *new_priv(const char *dirname,
     if (time(&t) == -1)
         goto error;
     priv = malloc(sizeof(*priv) + strlen(dirname) + 1);
-    if (priv == NULL)
+    if (!priv)
         goto error;
     strcpy(priv->dirname, dirname);
     priv->t = t;
@@ -429,7 +429,7 @@ static int get_flocal_r(FLIST **flocal, FLIST **flast, STR pathname, char *name,
     LIST_SEEK_NEXT(*flast, name, seek);
     if (seek) {
         *flocal = add_FLIST(*flocal, name);
-        if (*flocal == NULL) {
+        if (!*flocal) {
             status = ERROR_MEMORY;
             goto error;
         }
@@ -450,13 +450,13 @@ static int get_flocal_r(FLIST **flocal, FLIST **flast, STR pathname, char *name,
     switch (ltype & FST_LTYPE) {
     case FST_LDIR:
         dir = opendir(pathname.s);
-        if (dir == NULL) {
+        if (!dir) {
             status = ERROR_FOPEN;
             goto error;
         }
         ONERR(str_cats(&pathname, "/", NULL), ERROR_MEMORY);
         fdir = *flocal;
-        while ((ent = readdir(dir)) != NULL) {
+        while (ent = readdir(dir), ent) {
             ONSTOP(stop, ERROR_STOP);
             if (!strcmp(ent->d_name, ".") ||
                 !strcmp(ent->d_name, "..") )
@@ -481,7 +481,7 @@ static int get_flocal_r(FLIST **flocal, FLIST **flast, STR pathname, char *name,
     }
     status = 0;
 error:
-    if (dir != NULL)
+    if (dir)
         closedir(dir);
     return status;
 }
@@ -519,13 +519,13 @@ static int get_flocal(PRIV *priv) {
         goto error;
     }
     dir = opendir(pathname.s);
-    if (dir == NULL) {
+    if (!dir) {
         status = ERROR_FOPEN;
         goto error;
     }
     ONERR(str_cats(&pathname, "/", NULL), ERROR_MEMORY);
     flocal = &priv->flocal, flast = &priv->fsynced;
-    while ((ent = readdir(dir)) != NULL) {
+    while (ent = readdir(dir), ent) {
         ONSTOP(priv->stop, ERROR_STOP);
         if (!strcmp(ent->d_name, ".") ||
             !strcmp(ent->d_name, "..") ||
@@ -552,7 +552,7 @@ static int get_flocal(PRIV *priv) {
 #endif  /* #ifdef _INCLUDE_progress_h */
     status = 0;
 error:
-    if (dir != NULL)
+    if (dir)
         closedir(dir);
     return status;
 }
@@ -1003,7 +1003,7 @@ static int logging(PRIV *priv) {
     STR_INIT(pathname, str);
     ONERR(str_cats(&pathname, priv->dirname, "/"SYNCDIR"/"LOCKDIR"/"LOGFILE, NULL), ERROR_MEMORY);
     fp = fopen(pathname.s, "w");
-    if (fp == NULL) {
+    if (!fp) {
         status = ERROR_DMAKE;
         goto error;
     }
@@ -1116,7 +1116,7 @@ static int logging(PRIV *priv) {
     }
     status = 0;
 error:
-    if (fp != NULL)
+    if (fp)
         fclose(fp);
     return status;
 }
@@ -1137,11 +1137,11 @@ static int clean_r(STR pathname, const char *entname, time_t backup,
         switch (st.st_mode & S_IFMT) {
         case S_IFDIR:
             dir = opendir(pathname.s);
-            if (dir == NULL) {
+            if (!dir) {
                 status = ERROR_DOPEN;
                 goto error;
             }
-            while ((ent = readdir(dir)) != NULL) {
+            while (ent = readdir(dir), ent) {
                 ONSTOP(stop, ERROR_STOP);
                 if (!strcmp(ent->d_name, ".") ||
                     !strcmp(ent->d_name, "..") )
@@ -1164,7 +1164,7 @@ static int clean_r(STR pathname, const char *entname, time_t backup,
         }
     status = 0;
 error:
-    if (dir != NULL)
+    if (dir)
         closedir(dir);
     return status;
 }
@@ -1179,11 +1179,11 @@ static int clean(PRIV *priv) {
     STR_INIT(pathname, str);
     ONERR(str_cats(&pathname, priv->dirname, "/"SYNCDIR, NULL), ERROR_MEMORY);
     dir = opendir(pathname.s);
-    if (dir == NULL) {
+    if (!dir) {
         status = ERROR_DOPEN;
         goto error;
     }
-    while ((ent = readdir(dir)) != NULL) {
+    while (ent = readdir(dir), ent) {
         ONSTOP(priv->stop, ERROR_STOP);
         if (!strcmp(ent->d_name, ".") ||
             !strcmp(ent->d_name, "..") ||
@@ -1196,7 +1196,7 @@ static int clean(PRIV *priv) {
     closedir(dir), dir = NULL;
     status = 0;
 error:
-    if (dir != NULL)
+    if (dir)
         closedir(dir);
     return status;
 }
