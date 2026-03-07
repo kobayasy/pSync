@@ -1,4 +1,4 @@
-/* common.c - Last modified: 28-Feb-2026 (kobayasy)
+/* common.c - Last modified: 07-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -36,7 +36,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/types.h>
 #ifdef POLL_TIMEOUT
 #include <poll.h>
 #endif  /* #ifdef POLL_TIMEOUT */

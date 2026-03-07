@@ -1,4 +1,4 @@
-/* popen3.c - Last modified: 14-Feb-2026 (kobayasy)
+/* popen3.c - Last modified: 07-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -29,7 +29,6 @@
 
 #include <errno.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/wait.h>
 #include "popen3.h"
 

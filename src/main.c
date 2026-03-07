@@ -1,4 +1,4 @@
-/* main.c - Last modified: 28-Feb-2026 (kobayasy)
+/* main.c - Last modified: 07-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -40,7 +40,6 @@
 #include <poll.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include "common.h"
 #include "psync_psp.h"
 #include "popen3.h"

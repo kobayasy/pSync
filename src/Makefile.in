@@ -1,5 +1,5 @@
 # @configure_input@
-# Makefile.in - Last modified: 07-Feb-2026 (kobayasy)
+# Makefile.in - Last modified: 07-Mar-2026 (kobayasy)
 #
 # Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
 #
@@ -37,6 +37,8 @@ mandir = @mandir@
 
 CC = @CC@
 CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
 DEFS = @DEFS@
 LIBS = @LIBS@
 INSTALL = @INSTALL@
@@ -59,10 +61,10 @@ info.@OBJEXT@ : info.c common.h tpbar.h info.h config.h
 main.@OBJEXT@ : main.c common.h psync_psp.h psync.h popen3.h info.h config.h
 
 $(TARGET) : $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 %.@OBJEXT@ : %.c
-	$(CC) $(CFLAGS) $(DEFS) -c $<
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(DEFS) -c $<
 
 clean :
 	$(RM) $(TARGET)

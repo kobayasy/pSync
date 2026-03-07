@@ -1,4 +1,4 @@
-/* psync.c - Last modified: 28-Feb-2026 (kobayasy)
+/* psync.c - Last modified: 07-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -42,7 +42,6 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include "common.h"
 #include "progress.h"
 #include "psync.h"
