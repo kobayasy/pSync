@@ -1,4 +1,4 @@
-/* info.h - Last modified: 28-Feb-2026 (kobayasy)
+/* info.h - Last modified: 22-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -27,9 +27,10 @@
 #define _INCLUDE_info_h
 
 #include <stddef.h>
+#include <signal.h>
 
-extern void *info_new(size_t namelen);
-extern void info_free(void *p);
-extern void info_print(void *p, unsigned int host, const char *line);
+extern int info_start(int *fds, size_t namelen,
+                      volatile sig_atomic_t *stop );
+extern int info_stop(void);
 
 #endif  /* #ifndef _INCLUDE_info_h */

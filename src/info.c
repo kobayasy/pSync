@@ -1,4 +1,4 @@
-/* info.c - Last modified: 28-Feb-2026 (kobayasy)
+/* info.c - Last modified: 22-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -27,11 +27,15 @@
 #include <config.h>
 #endif  /* #ifdef HAVE_CONFIG_H */
 
+#include <errno.h>
 #include <limits.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <poll.h>
+#include <pthread.h>
 #include <unistd.h>
 #include "common.h"
 #include "tpbar.h"
@@ -74,18 +78,18 @@ static const char *strmes(int status) {
         /* -28: ERROR_ARGS */            "Argument"
     };
     const char **mes;
-    size_t size;
+    size_t n;
 
     if (status < 0) {
         mes = nmes;
-        size = sizeof(nmes)/sizeof(*nmes);
+        n = sizeof(nmes)/sizeof(*nmes);
         status = -(status + 1);
     }
     else {
         mes = pmes;
-        size = sizeof(pmes)/sizeof(*pmes);
+        n = sizeof(pmes)/sizeof(*pmes);
     }
-    if (status >= size)
+    if (status >= n)
         status = 0;
     return mes[status];
 }
@@ -108,183 +112,303 @@ error:
     return status;
 }
 
-typedef struct {
-    int sid;
+#define INFONFD 2
+#define INFOEOL '\n'
+
+typedef struct s_ilist {
+    struct s_ilist *next, *prev;
     int row;
-    char *name;
     struct {
-        intmax_t filescan;
+        char str[64];
+        intmax_t scan;
         intmax_t upload;
-        intmax_t downloaded;
-        intmax_t fileremove;
-        intmax_t filecopy;
-    } host[2];
-} PROGRESS;
-typedef struct {
-    int sid[2];
-    PROGRESS progress[2];
+        intmax_t download;
+        intmax_t remove;
+        intmax_t copy;
+    } host[INFONFD];
+    char name[1];
+} ILIST;
+
+static ILIST *new_ILIST(ILIST *ilist) {
+    LIST_NEW(ilist);
+    ilist->row = 0;
+    memset(ilist->host, 0, sizeof(ilist->host));
+    return ilist;
+}
+
+static ILIST *add_ILIST(ILIST *ilist, const char *name, int row) {
+    ILIST *inew = NULL;
+
+    if (!*name)
+        goto error;
+    inew = malloc(offsetof(ILIST, name) + strlen(name) + 1);
+    if (!inew)
+        goto error;
+    strcpy(inew->name, name);
+    inew->row = row;
+    memset(inew->host, 0, sizeof(inew->host));
+    LIST_INSERT_NEXT(inew, ilist);
+error:
+    return inew;
+}
+
+static each_next(ILIST)
+
+static int delete_func(ILIST *i, void *data) {
+    int status = INT_MIN;
+
+    LIST_DELETE(i);
+    free(i);
+    status = 0;
+    return status;
+}
+
+static struct {
+    ILIST ilist, *i[INFONFD];
     TPBAR tpbar;
     size_t namelen;
-    char buffer[];
-} PRIV;
+    volatile sig_atomic_t *stop;
+    pthread_t tid;
+} priv;
 
-void *info_new(size_t namelen) {
-    PRIV *priv = NULL;
-    unsigned int host;
-
-    priv = malloc(sizeof(*priv) + (namelen + 1) * 2);
-    if (!priv)
-        goto error;
-    for (host = 0; host < 2; ++host) {
-        priv->sid[host] = 0;
-        priv->progress[host].sid = INT_MIN;
-        priv->progress[host].name = priv->buffer + (namelen + 1) * host;
-    }
-    tpbar_init(&priv->tpbar);
-    priv->namelen = namelen;
-    if (priv->tpbar.co < priv->namelen + 1+29+1)
-        priv->tpbar.up = NULL;
-error:
-    return priv;
-}
-
-void info_free(void *p) {
-    PRIV *priv = p;
-
-    free(priv);
-}
-
-void info_print(void *p, unsigned int host, const char *line) {
-    PRIV *priv = p;
-    int update = INT_MIN;
-    static const char *hostname[] = {"Local: ", "Remote: "};
-    PROGRESS *progress = &priv->progress[priv->sid[host] & 1];
+static int info_print(unsigned int host, const char *line) {
+    int status = INT_MIN;
+    ILIST *i;
+    int update;
+    int seek;
     STR buffer;
     char str[1024];
     intmax_t n1, n2;
-    char str1[13], str2[13];
+    char *s;
+    unsigned int n;
 
+    i = host < INFONFD ? priv.i[host] : NULL;
+    update = 0;
     switch (*line++) {
-    case '.':
-        update = 0;
-        break;
     case '!':
-        if (strchr("+-", *line))
+        switch (*line) {
+        case '+':
+        case '-':
             line = strmes(strtol(line, NULL, 10));
+            break;
+        }
         update = -1;
         break;
     case '[':
-        if (progress->sid != priv->sid[host]) {
-            progress->sid = priv->sid[host];
-            progress->row = tpbar_getrow(INT_MAX, &priv->tpbar);
-            strcpy(progress->name, line);
-            memset(progress->host, 0, sizeof(progress->host));
-            update = 1;
+        if (i) {
+            LIST_SEEK_NEXT(i, line, seek);
+            if (seek) {
+                i = add_ILIST(i, line, tpbar_getrow(INT_MAX, &priv.tpbar));
+                if (!i)
+                    goto error;
+                for (n = 0; n < INFONFD; ++n) {
+                    STR_INIT(buffer, i->host[n].str);
+                    if (ISERR(str_catf(&buffer, "[ %-25s ]", priv.ilist.host[n])))
+                        goto error;
+                }
+                update = 1;
+            }
+            priv.i[host] = i;
         }
         break;
     case ']':
-        ++priv->sid[host];
         break;
     case 'S':
-        if (priv->tpbar.up) {
-            progress->host[host].filescan = strtoll(line, NULL, 10);
-            update = 2;
+        if (i) {
+            n1 = i->host[host].scan = strtoll(line, NULL, 10);
+            if (n1 > 0) {
+                STR_INIT(buffer, i->host[host].str);
+                if (ISERR(tpbar_printf(&buffer, 0, 1, &priv.tpbar, "[%26jd ]", n1)))
+                    break;
+                update = 1;
+            }
         }
         break;
     case 'U':
-        if (priv->tpbar.up) {
-            progress->host[host].upload = strtoll(line, NULL, 10);
-            update = 3;
+        if (i) {
+            n1 = i->host[host].upload = strtoll(line, NULL, 10);
+            n2 = i->host[host ^ 1].download;
+            STR_INIT(buffer, str);
+            if (ISERR(str_cats(&buffer, "[", NULL)) ||
+                ISERR(str_catib(&buffer, 12, n2)) ||
+                ISERR(str_cats(&buffer, " /", NULL)) ||
+                ISERR(str_catib(&buffer, 12, n1)) ||
+                ISERR(str_cats(&buffer, " ]", NULL)) )
+                break;
+            STR_INIT(buffer, i->host[host ^ 1].str);
+            if (ISERR(tpbar_printf(&buffer, n2, n1, &priv.tpbar, str)))
+                break;
+            update = 1;
         }
         break;
     case 'D':
-        if (priv->tpbar.up) {
-            progress->host[host].downloaded = strtoll(line, NULL, 10);
-            update = 3;
+        if (i) {
+            n1 = i->host[host ^ 1].upload;
+            n2 = i->host[host].download = strtoll(line, NULL, 10);
+            STR_INIT(buffer, str);
+            if (ISERR(str_cats(&buffer, "[", NULL)) ||
+                ISERR(str_catib(&buffer, 12, n2)) ||
+                ISERR(str_cats(&buffer, " /", NULL)) ||
+                ISERR(str_catib(&buffer, 12, n1)) ||
+                ISERR(str_cats(&buffer, " ]", NULL)) )
+                break;
+            STR_INIT(buffer, i->host[host].str);
+            if (ISERR(tpbar_printf(&buffer, n2, n1, &priv.tpbar, str)))
+                break;
+            update = 1;
         }
         break;
     case 'R':
-        if (priv->tpbar.up) {
-            progress->host[host].fileremove = strtoll(line, NULL, 10);
-            update = 4;
+        if (i) {
+            n1 = i->host[host].remove = strtoll(line, NULL, 10);
+            n2 = i->host[host].copy;
+            STR_INIT(buffer, i->host[host].str);
+            if (ISERR(tpbar_printf(&buffer, 1, 1, &priv.tpbar, "[%+12jd :%+12jd ]", -n1, n2)))
+                break;
+            update = 1;
         }
         break;
     case 'C':
-        if (priv->tpbar.up) {
-            progress->host[host].filecopy = strtoll(line, NULL, 10);
-            update = 4;
+        if (i) {
+            n1 = i->host[host].remove;
+            n2 = i->host[host].copy = strtoll(line, NULL, 10);
+            STR_INIT(buffer, i->host[host].str);
+            if (ISERR(tpbar_printf(&buffer, 1, 1, &priv.tpbar, "[%+12jd :%+12jd ]", -n1, n2)))
+                break;
+            update = 1;
         }
         break;
     }
     switch (update) {
-    case  0:
-        STR_INIT(buffer, str);
-        if (ISERR(tpbar_setrow(&buffer, INT_MAX, &priv->tpbar)) ||
-            ISERR(str_cats(&buffer, line, NULL)) )
-            break;
-        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
-        break;
     case -1:
         STR_INIT(buffer, str);
-        if (ISERR(tpbar_setrow(&buffer, INT_MAX, &priv->tpbar)) ||
-            ISERR(str_cats(&buffer, hostname[host], NULL)) )
+        if (ISERR(tpbar_setrow(&buffer, INT_MAX, &priv.tpbar)))
             break;
-        if (progress->sid == priv->sid[host])
-            if (ISERR(str_cats(&buffer, progress->name, " - ", NULL)))
+        if (host < INFONFD) {
+            if (ISERR(str_cats(&buffer, priv.ilist.host[host], ": ", NULL)))
                 break;
+            s = i->name;
+            if (*s)
+                if (ISERR(str_cats(&buffer, s, " - ", NULL)))
+                    break;
+        }
         if (ISERR(str_cats(&buffer, line, NULL)))
             break;
         write(STDOUT_FILENO, buffer.s, str_len(&buffer));
         break;
     case  1:
         STR_INIT(buffer, str);
-        if (ISERR(tpbar_setrow(&buffer, progress->row, &priv->tpbar)) ||
-            ISERR(str_cats(&buffer, progress->name, NULL)) )
+        if (ISERR(tpbar_setrow(&buffer, i->row, &priv.tpbar)))
             break;
-        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
-        break;
-    case  2:
-        STR_INIT(buffer, str);
-        if (ISERR(tpbar_setrow(&buffer, progress->row, &priv->tpbar)) ||
-            ISERR(str_catf(&buffer, "%-*s ", (int)priv->namelen, progress->name)) ||
-            ISERR(tpbar_printf(&buffer, 0, 1, &priv->tpbar, "[%26jd ]",
-                               progress->host[0].filescan + progress->host[1].filescan )) )
-            break;
-        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
-        break;
-    case  3:
-        n1 = progress->host[0].downloaded + progress->host[1].downloaded;
-        n2 = progress->host[0].upload + progress->host[1].upload;
-        STR_INIT(buffer, str1);
-        if (n1 > 0 && ISERR(str_catib(&buffer, buffer.size - 1, n1)))
-            break;
-        STR_INIT(buffer, str2);
-        if (n2 > 0 && ISERR(str_catib(&buffer, buffer.size - 1, n2)))
-            break;
-        STR_INIT(buffer, str);
-        if (ISERR(tpbar_setrow(&buffer, progress->row, &priv->tpbar)) ||
-            ISERR(str_catf(&buffer, "%-*s ", (int)priv->namelen, progress->name)) ||
-            ISERR(tpbar_printf(&buffer, n1, n2, &priv->tpbar, "[%12s /%12s ]",
-                               str1, str2 )) )
-            break;
-        write(STDOUT_FILENO, buffer.s, str_len(&buffer));
-        break;
-    case  4:
-        n1 = progress->host[0].fileremove + progress->host[1].fileremove;
-        n2 = progress->host[0].filecopy + progress->host[1].filecopy;
-        STR_INIT(buffer, str1);
-        if (n1 > 0 && ISERR(str_catf(&buffer, "%+12jd", -n1)))
-            break;
-        STR_INIT(buffer, str2);
-        if (n2 > 0 && ISERR(str_catf(&buffer, "%+12jd",  n2)))
-            break;
-        STR_INIT(buffer, str);
-        if (ISERR(tpbar_setrow(&buffer, progress->row, &priv->tpbar)) ||
-            ISERR(str_catf(&buffer, "%-*s ", (int)priv->namelen, progress->name)) ||
-            ISERR(tpbar_printf(&buffer, 1, 1, &priv->tpbar, "[%12s :%12s ]",
-                               str1, str2 )) )
-            break;
+        s = i->name;
+        if (priv.tpbar.co > priv.namelen + 60) {
+            if (ISERR(str_catf(&buffer, "%-*s", (int)priv.namelen, s)))
+                break;
+            for (n = 0; n < INFONFD; ++n) {
+                s = i->host[n].str;
+                if (*s)
+                    if (ISERR(str_cats(&buffer, " ", s, NULL)))
+                        break;
+            }
+        }
+        else {
+            if (ISERR(str_cats(&buffer, s, NULL)))
+                break;
+        }
         write(STDOUT_FILENO, buffer.s, str_len(&buffer));
         break;
     }
+    status = 0;
+error:
+    return status;
+}
+
+static void *info_thread(void *data) {
+    int *fd = data;
+    unsigned int nfd;
+    unsigned int n;
+    struct pollfd fds[INFONFD];
+    char buffer[1024];
+    ssize_t size;
+    char *s, *p;
+
+    nfd = 0;
+    for (n = 0; n < INFONFD; ++n)
+        fds[n].fd = fd[n], fds[n].events = POLLIN, ++nfd;
+    while (nfd > 0) {
+        if (ISSTOP(priv.stop))
+            goto error;
+        switch (poll(fds, INFONFD, -1)) {
+        case -1:
+            switch (errno) {
+            case EINTR:
+                continue;
+            }
+        case  0:  /* timeout */
+            goto error;
+        }
+        for (n = 0; n < INFONFD; ++n)
+            if (fds[n].fd != -1 && fds[n].revents) {
+                if (!(fds[n].revents & POLLIN)) {
+                    fds[n].fd = -1, --nfd;
+                    continue;
+                }
+                size = read(fds[n].fd, buffer, sizeof(buffer));
+                switch (size) {
+                case -1:
+                    switch (errno) {
+                    case EINTR:
+                        continue;
+                    }
+                case  0:
+                    fds[n].fd = -1, --nfd;
+                    continue;
+                }
+                p = buffer;
+                while (p = memchr(s = p, INFOEOL, size), p)  {
+                    *p++ = 0;
+                    if (ISERR(info_print(n, s)))
+                        goto error;
+                    size -= p - s;
+                }
+            }
+    }
+    info_print(UINT_MAX, "!");
+error:
+    return NULL;
+}
+
+int info_start(int *fds, size_t namelen,
+               volatile sig_atomic_t *stop ) {
+    int status = INT_MIN;
+    unsigned int n;
+
+    new_ILIST(&priv.ilist);
+    strcpy(priv.ilist.host[0].str, "Local");
+    strcpy(priv.ilist.host[1].str, "Remote");
+    for (n = 0; n < INFONFD; ++n)
+        priv.i[n] = &priv.ilist;
+    tpbar_init(&priv.tpbar);
+    priv.namelen = namelen;
+    priv.stop = stop;
+    if (pthread_create(&priv.tid, NULL, info_thread, fds) != 0) {
+        status = -1;
+        goto error;
+    }
+    status = 0;
+error:
+    return status;
+}
+
+int info_stop(void) {
+    int status = INT_MIN;
+
+    if (pthread_join(priv.tid, NULL) != 0) {
+        status = -1;
+        goto error;
+    }
+    status = 0;
+error:
+    each_next_ILIST(&priv.ilist, delete_func, NULL, NULL);
+    return status;
 }

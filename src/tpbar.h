@@ -1,4 +1,4 @@
-/* tpbar.h - Last modified: 28-Feb-2026 (kobayasy)
+/* tpbar.h - Last modified: 22-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *

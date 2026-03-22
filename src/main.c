@@ -1,4 +1,4 @@
-/* main.c - Last modified: 07-Mar-2026 (kobayasy)
+/* main.c - Last modified: 22-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -28,17 +28,12 @@
 #endif  /* #ifdef HAVE_CONFIG_H */
 
 #include <ctype.h>
-#include <errno.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
-#include <fcntl.h>
-#include <poll.h>
-#include <pthread.h>
 #include <unistd.h>
 #include "common.h"
 #include "psync_psp.h"
@@ -74,79 +69,6 @@ static struct {
 } priv = {
     .stop = 0
 };
-
-static void *info_thread(void *data) {
-    int *infos = data;
-    struct pollfd fds[2] = {
-        {.fd = infos[0], .events = POLLIN},
-        {.fd = infos[1], .events = POLLIN}
-    };
-    void *p = NULL;
-    unsigned int host;
-    int fd = -1;
-    FILE *fp[2] = {NULL, NULL};
-    char *buffer = NULL;
-    size_t size = 0;
-    char *s, *e;
-
-    p = info_new(priv.namelen);
-    if (!p)
-        goto error;
-    for (host = 0; host < sizeof(fds)/sizeof(*fds); ++host) {
-        fd = dup(fds[host].fd);
-        if (fd == -1)
-            goto error;
-        if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1)
-            goto error;
-        fp[host] = fdopen(fd, "r");
-        if (!fp[host])
-            goto error;
-        fd = -1;
-    }
-    while (fds[0].fd != -1 || fds[1].fd != -1) {
-        if (ISSTOP(&priv.stop))
-            goto error;
-        switch (poll(fds, sizeof(fds)/sizeof(*fds), -1)) {
-        case -1:
-            switch (errno) {
-            case EINTR:
-                continue;
-            }
-        case  0:
-            goto error;
-        }
-        for (host = 0; host < sizeof(fds)/sizeof(*fds); ++host) {
-            if (fds[host].fd == -1 || !fds[host].revents)
-                continue;
-            if (!(fds[host].revents & POLLIN)) {
-                fds[host].fd = -1;
-                fclose(fp[host]), fp[host] = NULL;
-                continue;
-            }
-            while (getline(&buffer, &size, fp[host]) != -1)
-                for (e = strchr(s = buffer, '\n'); e; e = strchr(s = e, '\n')) {
-                    *e++ = 0;
-                    info_print(p, host, s);
-                }
-            if (feof(fp[host])) {
-                fds[host].fd = -1;
-                fclose(fp[host]), fp[host] = NULL;
-                continue;
-            }
-        }
-    }
-    info_print(p, 0, ".");
-error:
-    free(buffer);
-    for (host = 0; host < sizeof(fds)/sizeof(*fds); ++host)
-        if (fp[host])
-            fclose(fp[host]);
-    if (fd != -1)
-        close(fd);
-    if (p)
-        info_free(p);
-    return NULL;
-}
 
 typedef struct {
     struct {
@@ -226,7 +148,6 @@ static int run_local(int fdin, int fdout, int info, pid_t pid, void *data) {
     RUN_PARAM *param = data;
     int info_pipe[2] = {-1, -1};
     int infos[2];
-    pthread_t info_tid;
     SIGACT oldact;
 
     param->psp->fdin = fdout, param->psp->fdout = fdin;
@@ -238,10 +159,7 @@ static int run_local(int fdin, int fdout, int info, pid_t pid, void *data) {
         infos[0] = info_pipe[0];
         infos[1] = info;
         param->psp->info = info_pipe[1];
-        if (pthread_create(&info_tid, NULL, info_thread, infos) != 0) {
-            status = ERROR_SYSTEM;
-            goto error;
-        }
+        ONERR(info_start(infos, priv.namelen, &priv.stop), ERROR_SYSTEM);
     }
     sigactinit(&oldact);
     ONERR(sigactset(sighandler, &oldact), ERROR_SYSTEM);
@@ -249,10 +167,7 @@ static int run_local(int fdin, int fdout, int info, pid_t pid, void *data) {
     sigactreset(&oldact);
     if (param->verbose) {
         close(info_pipe[1]), info_pipe[1] = -1;
-        if (pthread_join(info_tid, NULL) != 0) {
-            status = ERROR_SYSTEM;
-            goto error;
-        }
+        ONERR(info_stop(), ERROR_SYSTEM);
         close(info_pipe[0]), info_pipe[0] = -1;
     }
 error:

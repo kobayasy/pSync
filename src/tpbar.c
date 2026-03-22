@@ -1,4 +1,4 @@
-/* tpbar.c - Last modified: 28-Feb-2026 (kobayasy)
+/* tpbar.c - Last modified: 22-Mar-2026 (kobayasy)
  *
  * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -29,7 +29,6 @@
 
 #include <limits.h>
 #include <stdarg.h>
-#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -105,11 +104,14 @@ int tpbar_setrow(STR *str, int row, TPBAR *tpbar) {
     else {
         if (ISERR(str_cats(str, "\r", NULL)))
             goto error;
-        if (tpbar->up && n < 0)
+        if (n < 0) {
+            if (!tpbar->up)
+                goto error;
             do {
                 if (ISERR(str_cats(str, tpbar->up, NULL)))
                     goto error;
             } while (++n < 0);
+        }
     }
     tpbar->row.cur = row;
     if (tpbar->row.cur < tpbar->row.min)
