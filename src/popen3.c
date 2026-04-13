@@ -1,4 +1,4 @@
-/* popen3.c - Last modified: 07-Mar-2026 (kobayasy)
+/* popen3.c - Last modified: 13-Apr-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -55,7 +55,7 @@ int popen3(char *const argv[],
         if (dup2(stdin_pipe[0], STDIN_FILENO) == -1 ||
             dup2(stdout_pipe[1], STDOUT_FILENO) == -1 ||
             dup2(stderr_pipe[1], STDERR_FILENO) == -1 )
-            goto error;
+            _exit(1);
         close(stdin_pipe[0]), stdin_pipe[0] = -1;
         close(stdout_pipe[1]), stdout_pipe[1] = -1;
         close(stderr_pipe[1]), stderr_pipe[1] = -1;

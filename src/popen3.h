@@ -1,4 +1,4 @@
-/* popen3.h - Last modified: 07-Mar-2026 (kobayasy)
+/* popen3.h - Last modified: 13-Apr-2026 (kobayasy)
  *
  * Copyright (C) 2018-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
