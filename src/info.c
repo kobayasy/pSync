@@ -1,4 +1,4 @@
-/* info.c - Last modified: 22-Mar-2026 (kobayasy)
+/* info.c - Last modified: 18-Jul-2026 (kobayasy)
  *
  * Copyright (C) 2023-2026 by Yuichi Kobayashi <kobayasy@kobayasy.com>
  *
@@ -263,8 +263,14 @@ static int info_print(unsigned int host, const char *line) {
             n1 = i->host[host].remove = strtoll(line, NULL, 10);
             n2 = i->host[host].copy;
             STR_INIT(buffer, i->host[host].str);
-            if (ISERR(tpbar_printf(&buffer, 1, 1, &priv.tpbar, "[%+12jd :%+12jd ]", -n1, n2)))
-                break;
+            if (n1) {
+                if (ISERR(tpbar_printf(&buffer, 1, 1, &priv.tpbar, "[%+12jd :%+12jd ]", -n1, n2)))
+                    break;
+            }
+            else {
+                if (ISERR(tpbar_printf(&buffer, 1, 1, &priv.tpbar, "[%12s :%+12jd ]", "-0", n2)))
+                    break;
+            }
             update = 1;
         }
         break;
@@ -273,8 +279,14 @@ static int info_print(unsigned int host, const char *line) {
             n1 = i->host[host].remove;
             n2 = i->host[host].copy = strtoll(line, NULL, 10);
             STR_INIT(buffer, i->host[host].str);
-            if (ISERR(tpbar_printf(&buffer, 1, 1, &priv.tpbar, "[%+12jd :%+12jd ]", -n1, n2)))
-                break;
+            if (n1) {
+                if (ISERR(tpbar_printf(&buffer, 1, 1, &priv.tpbar, "[%+12jd :%+12jd ]", -n1, n2)))
+                    break;
+            }
+            else {
+                if (ISERR(tpbar_printf(&buffer, 1, 1, &priv.tpbar, "[%12s :%+12jd ]", "-0", n2)))
+                    break;
+            }
             update = 1;
         }
         break;
